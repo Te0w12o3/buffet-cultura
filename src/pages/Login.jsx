@@ -24,6 +24,7 @@ export default function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-primary)] greek-pattern-bg">
       <div className="bg-white rounded-none shadow-2xl p-8 max-w-md w-full meander-border">
+        <img src={`${import.meta.env.BASE_URL}logo.png`} alt="Logo" className="h-24 mx-auto mb-6 object-contain" />
         <h1 className="text-3xl font-black text-center text-[var(--color-primary)] mb-2 uppercase tracking-widest">Buffet</h1>
         <h2 className="text-xl font-bold text-center text-[var(--color-secondary)] mb-8 uppercase tracking-wider">Casa de la Cultura</h2>
         
