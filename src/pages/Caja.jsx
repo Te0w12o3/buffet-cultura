@@ -3,13 +3,13 @@ import { useOrders } from '../store';
 import { useNavigate } from 'react-router-dom';
 
 const MENU_ITEMS = [
-  { id: 1, name: 'Empanada de Carne', category: 'Entradas' },
-  { id: 2, name: 'Porción de Locro', category: 'Platos Principales' },
-  { id: 3, name: 'Choripán', category: 'Platos Principales' },
-  { id: 4, name: 'Gaseosa Cola', category: 'Bebidas' },
-  { id: 5, name: 'Vino Tinto (Copa)', category: 'Bebidas' },
-  { id: 6, name: 'Agua Mineral', category: 'Bebidas' },
-  { id: 7, name: 'Flan con Dulce de Leche', category: 'Postres' },
+  { id: 1, name: 'Empanada de Carne', category: 'Entradas', price: 1500 },
+  { id: 2, name: 'Porción de Locro', category: 'Platos Principales', price: 4500 },
+  { id: 3, name: 'Choripán', category: 'Platos Principales', price: 3000 },
+  { id: 4, name: 'Gaseosa Cola', category: 'Bebidas', price: 1200 },
+  { id: 5, name: 'Vino Tinto (Copa)', category: 'Bebidas', price: 2000 },
+  { id: 6, name: 'Agua Mineral', category: 'Bebidas', price: 1000 },
+  { id: 7, name: 'Flan con Dulce de Leche', category: 'Postres', price: 1800 },
 ];
 
 export default function Caja() {
@@ -62,6 +62,7 @@ export default function Caja() {
             >
               <span className="text-xs font-bold text-[var(--color-secondary)] uppercase tracking-wider mb-2 group-hover:text-[var(--color-secondary-container)]">{item.category}</span>
               <span className="font-bold text-lg group-hover:text-white text-[var(--color-primary)]">{item.name}</span>
+              <span className="font-bold text-md text-[var(--color-secondary)] mt-2">${item.price}</span>
             </button>
           ))}
         </div>
@@ -92,12 +93,22 @@ export default function Caja() {
                 {selectedItems.map((item, idx) => (
                   <li key={idx} className="flex justify-between items-center bg-white text-[var(--color-primary)] p-3 shadow-sm font-bold">
                     <span>{item.name}</span>
-                    <button type="button" onClick={() => handleRemoveItem(idx)} className="text-[#ba1a1a] text-2xl leading-none px-2 hover:bg-[#ffdad6] transition-colors">&times;</button>
+                    <div className="flex items-center gap-3">
+                      <span>${item.price}</span>
+                      <button type="button" onClick={() => handleRemoveItem(idx)} className="text-[#ba1a1a] text-2xl leading-none px-2 hover:bg-[#ffdad6] transition-colors">&times;</button>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </div>
+
+          {selectedItems.length > 0 && (
+            <div className="mb-6 flex justify-between items-center text-2xl font-black text-[var(--color-secondary)]">
+              <span>TOTAL:</span>
+              <span>${selectedItems.reduce((sum, item) => sum + item.price, 0)}</span>
+            </div>
+          )}
 
           <button
             type="submit"
