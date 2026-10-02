@@ -34,6 +34,8 @@ export function useOrders() {
       } else {
         setOrders([]);
       }
+    }, (error) => {
+      console.error("Firebase Read Error:", error);
     });
 
     return () => unsubscribe();
@@ -47,6 +49,9 @@ export function useOrders() {
       ...orderData,
       status: 'preparacion',
       createdAt: new Date().toISOString()
+    }).catch(error => {
+      console.error("Firebase Write Error:", error);
+      alert("Error al guardar en base de datos. Revisa la consola o los permisos de Firebase.");
     });
   };
 

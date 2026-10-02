@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useOrders } from '../store';
 import { useNavigate } from 'react-router-dom';
 
@@ -15,8 +15,33 @@ const MENU_ITEMS = [
 export default function Caja() {
   const [customerName, setCustomerName] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
+  const [receiptImage, setReceiptImage] = useState(null);
+  const fileInputRef = useRef(null);
   const { addOrder, orders } = useOrders();
   const navigate = useNavigate();
+
+  const handleImageCapture = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const compressedBase64 = canvas.toDataURL('image/jpeg', 0.6);
+          setReceiptImage(compressedBase64);
+        };
+        img.src = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleAddItem = (item) => {
     setSelectedItems([...selectedItems, item]);
@@ -37,11 +62,14 @@ export default function Caja() {
     addOrder({
       customerName,
       items: selectedItems,
-      orderNumber
+      orderNumber,
+      paymentMethod: receiptImage ? 'transferencia' : 'efectivo',
+      receiptImage: receiptImage || null
     });
 
     setCustomerName('');
     setSelectedItems([]);
+    setReceiptImage(null);
   };
 
   return (
@@ -104,11 +132,38 @@ export default function Caja() {
           </div>
 
           {selectedItems.length > 0 && (
-            <div className="mb-6 flex justify-between items-center text-2xl font-black text-[var(--color-secondary)]">
+            <div className="mb-4 flex justify-between items-center text-2xl font-black text-[var(--color-secondary)]">
               <span>TOTAL:</span>
               <span>${selectedItems.reduce((sum, item) => sum + item.price, 0)}</span>
             </div>
           )}
+
+          <div className="mb-6">
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              ref={fileInputRef}
+              onChange={handleImageCapture}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current.click()}
+              className={`w-full p-4 rounded-none border-2 font-bold uppercase tracking-wider transition-colors ${receiptImage ? 'bg-[#34a853] text-white border-[#34a853]' : 'bg-[var(--color-primary)] border-[#34a853] text-[#34a853] hover:bg-[#34a853] hover:text-white'}`}
+            >
+              {receiptImage ? '✅ Comprobante Capturado' : '📸 Pago Transferencia (MercadoPago)'}
+            </button>
+            {receiptImage && (
+              <button 
+                type="button" 
+                onClick={() => setReceiptImage(null)}
+                className="w-full text-center text-sm mt-2 text-white/70 hover:text-white underline"
+              >
+                Eliminar foto
+              </button>
+            )}
+          </div>
 
           <button
             type="submit"
