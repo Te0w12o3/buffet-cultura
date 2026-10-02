@@ -147,20 +147,24 @@ export default function Caja() {
               ref={fileInputRef}
               onChange={handleImageCapture}
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current.click()}
-              className={`w-full p-4 rounded-none border-2 font-bold uppercase tracking-wider transition-colors ${receiptImage ? 'bg-[#34a853] text-white border-[#34a853]' : 'bg-[var(--color-primary)] border-[#34a853] text-[#34a853] hover:bg-[#34a853] hover:text-white'}`}
-            >
-              {receiptImage ? '✅ Comprobante Capturado' : '📸 Pago Transferencia (MercadoPago)'}
-            </button>
-            {receiptImage && (
-              <button 
-                type="button" 
-                onClick={() => setReceiptImage(null)}
-                className="w-full text-center text-sm mt-2 text-white/70 hover:text-white underline"
+            {receiptImage ? (
+              <div className="w-full p-4 rounded-none border-2 bg-[#34a853] border-[#34a853] text-white font-bold uppercase tracking-wider text-center">
+                ✅ Comprobante Capturado
+                <button 
+                  type="button" 
+                  onClick={() => setReceiptImage(null)}
+                  className="block w-full text-center text-sm mt-2 text-white/70 hover:text-white underline normal-case"
+                >
+                  Eliminar foto
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current.click()}
+                className="w-full transition-transform hover:scale-105 active:scale-95 focus:outline-none"
               >
-                Eliminar foto
+                <img src={`${import.meta.env.BASE_URL}logo_mp.webp`} alt="Pagar con MercadoPago" className="w-full h-auto object-contain max-h-20 mx-auto drop-shadow-md hover:drop-shadow-xl" />
               </button>
             )}
           </div>
