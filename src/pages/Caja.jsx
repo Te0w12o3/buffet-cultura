@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useOrders } from '../store';
 import { useNavigate } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 
 const MENU_ITEMS = [
   { id: 1, name: 'Empanada de Carne', category: 'Entradas', price: 1500 },
@@ -16,6 +17,8 @@ export default function Caja() {
   const [customerName, setCustomerName] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [receiptImage, setReceiptImage] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showReceiptsModal, setShowReceiptsModal] = useState(false);
   const fileInputRef = useRef(null);
   const { addOrder, orders } = useOrders();
   const navigate = useNavigate();
@@ -41,6 +44,41 @@ export default function Caja() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleDownloadExcel = (tipo) => {
+    const today = new Date().toLocaleDateString();
+    
+    const filteredOrders = tipo === 'dia' 
+      ? orders.filter(o => {
+          if (!o.createdAt) return false;
+          return new Date(o.createdAt).toLocaleDateString() === today;
+        })
+      : orders;
+
+    const dataToExport = filteredOrders.map(order => {
+        const items = order.items?.map(i => i.name).join(' + ') || '';
+        const total = order.items?.reduce((sum, item) => sum + item.price, 0) || 0;
+        const hasReceipt = order.receiptImage ? 'Sí (Comprobante Adjunto)' : 'No';
+        
+        return {
+          "Nombre del Cliente": order.customerName,
+          "Pedido (#)": order.orderNumber,
+          "Detalle de Compra": items,
+          "Método de Pago": order.paymentMethod || 'Efectivo',
+          "Total Pagado": total,
+          "Comprobante MercadoPago": hasReceipt,
+          "Fecha": order.createdAt ? new Date(order.createdAt).toLocaleString() : 'N/A'
+        };
+    });
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Ventas");
+    
+    const fileName = tipo === 'dia' ? `Ventas_del_Dia_${today.replace(/\//g, '-')}.xlsx` : `Ventas_Totales.xlsx`;
+    
+    XLSX.writeFile(workbook, fileName);
   };
 
   const handleAddItem = (item) => {
@@ -77,7 +115,12 @@ export default function Caja() {
       {/* Menu Section */}
       <div className="flex-1 p-6 md:border-r-4 border-[var(--color-secondary)] overflow-y-auto bg-white">
         <div className="flex justify-between items-center mb-8 border-b-2 border-[var(--color-surface-dim)] pb-4">
-          <h2 className="text-3xl font-black text-[var(--color-primary)] uppercase tracking-widest">Menú del Banquete</h2>
+          <div className="flex items-center gap-4">
+            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-[var(--color-primary)] hover:bg-gray-100 transition-colors focus:outline-none">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <h2 className="text-3xl font-black text-[var(--color-primary)] uppercase tracking-widest">Menú del Banquete</h2>
+          </div>
           <button onClick={() => navigate('/')} className="text-sm font-bold text-[var(--color-primary)] hover:text-[var(--color-secondary)] uppercase tracking-widest transition-colors">Volver</button>
         </div>
         
@@ -178,6 +221,75 @@ export default function Caja() {
           </button>
         </form>
       </div>
+
+      {/* Sidebar Overlay */}
+      {isSidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsSidebarOpen(false)}></div>
+      )}
+
+      {/* Sidebar */}
+      <div className={`fixed top-0 left-0 h-full w-80 bg-white z-50 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+        <div className="p-6 border-b-4 border-[var(--color-secondary)] flex justify-between items-center bg-[var(--color-primary)] text-white">
+          <h3 className="text-xl font-black uppercase tracking-widest">Administración</h3>
+          <button onClick={() => setIsSidebarOpen(false)} className="text-white hover:text-[#ffdad6] text-3xl leading-none">&times;</button>
+        </div>
+        <div className="p-6 flex-1 flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest px-2">Exportar a Excel</p>
+            <button onClick={() => handleDownloadExcel('dia')} className="w-full p-4 text-left border-2 border-[var(--color-primary)] font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
+              Ventas del Día
+              <span className="text-xl">📅</span>
+            </button>
+            <button onClick={() => handleDownloadExcel('total')} className="w-full p-4 text-left border-2 border-[var(--color-primary)] font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
+              Ventas Totales
+              <span className="text-xl">📊</span>
+            </button>
+          </div>
+          <button onClick={() => { setShowReceiptsModal(true); setIsSidebarOpen(false); }} className="w-full p-4 mt-2 text-left border-2 border-[var(--color-secondary)] font-bold text-[var(--color-secondary)] hover:bg-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors uppercase tracking-wider flex items-center justify-between">
+            Ver Comprobantes
+            <span className="text-xl">🧾</span>
+          </button>
+          
+          <div className="mt-auto pt-6 border-t-2 border-gray-100">
+            <div className="text-center">
+              <p className="text-sm uppercase tracking-widest text-gray-400 font-bold mb-1">Total del Día</p>
+              <p className="text-3xl font-black text-[var(--color-primary)]">
+                ${orders.reduce((sum, order) => sum + (order.items?.reduce((s, i) => s + i.price, 0) || 0), 0)}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de Comprobantes */}
+      {showReceiptsModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col rounded-none shadow-2xl border-4 border-[var(--color-secondary)]">
+            <div className="p-6 border-b-4 border-[var(--color-secondary)] flex justify-between items-center bg-[var(--color-primary)] text-white">
+              <h3 className="text-2xl font-black uppercase tracking-widest">Comprobantes de Transferencia</h3>
+              <button onClick={() => setShowReceiptsModal(false)} className="text-white hover:text-[#ffdad6] text-4xl leading-none">&times;</button>
+            </div>
+            <div className="p-6 overflow-y-auto flex-1 bg-gray-50 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {orders.filter(o => o.receiptImage).length === 0 ? (
+                <div className="col-span-full text-center py-12 text-gray-400 font-bold text-xl uppercase tracking-widest">No hay comprobantes guardados</div>
+              ) : (
+                orders.filter(o => o.receiptImage).map(order => (
+                  <div key={order.id} className="bg-white border-2 border-gray-200 shadow-md p-4 flex flex-col">
+                    <div className="mb-4 pb-4 border-b-2 border-gray-100">
+                      <p className="font-black text-lg text-[var(--color-primary)]">{order.customerName}</p>
+                      <p className="text-sm font-bold text-[var(--color-secondary)] uppercase tracking-wider mb-2">Pedido #{order.orderNumber}</p>
+                      <p className="font-bold text-gray-600">Total: ${order.items?.reduce((s, i) => s + i.price, 0) || 0}</p>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center bg-gray-100 overflow-hidden">
+                      <img src={order.receiptImage} alt={`Comprobante ${order.customerName}`} className="max-h-64 object-contain" />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
