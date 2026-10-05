@@ -8,7 +8,7 @@ export default function Cocina() {
   const pendingOrders = orders.filter(o => o.status === 'preparacion');
 
   return (
-    <div className="min-h-screen bg-[var(--color-primary)] p-6 text-white font-sans greek-pattern-bg">
+    <div className="h-screen flex flex-col bg-[var(--color-primary)] p-6 text-white font-sans greek-pattern-bg overflow-hidden">
       <div className="flex justify-between items-center mb-8 border-b-2 border-[var(--color-secondary)] pb-4">
         <h1 className="text-3xl font-black uppercase tracking-widest text-white">Cocina del Banquete</h1>
         <button onClick={() => navigate('/')} className="text-sm text-[var(--color-secondary)] hover:text-white uppercase tracking-widest font-bold transition-colors">Volver</button>
@@ -19,28 +19,26 @@ export default function Cocina() {
           <p className="text-3xl text-white/50 font-serif italic">No hay banquetes pendientes</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="flex-1 min-h-0 flex gap-6 pb-6 overflow-x-auto custom-scrollbar snap-x">
           {pendingOrders.map(order => (
-            <div key={order.id} className="bg-white text-[var(--color-primary)] rounded-none p-6 shadow-2xl flex flex-col justify-between min-h-[300px] border-4 border-[var(--color-secondary)]">
-              <div>
-                <div className="flex justify-between items-start mb-4 border-b-2 border-[var(--color-primary)] pb-2">
-                  <h2 className="text-5xl font-black">#{order.orderNumber}</h2>
-                </div>
-                <div className="h-[150px] overflow-y-auto pr-2 custom-scrollbar">
-                  <ul className="space-y-3 text-lg font-bold">
-                    {order.items.map((item, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="mr-3 text-[var(--color-secondary)] font-bold">•</span>
-                        <span className="leading-tight">{item.name}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <div key={order.id} className="snap-start shrink-0 w-full md:w-[calc(50%-0.75rem)] lg:w-[calc(33.333%-1rem)] xl:w-[calc(25%-1.125rem)] bg-white text-[var(--color-primary)] rounded-none p-6 shadow-2xl flex flex-col border-4 border-[var(--color-secondary)] h-full overflow-hidden">
+              <div className="flex justify-between items-start mb-4 border-b-2 border-[var(--color-primary)] pb-2 shrink-0">
+                <h2 className="text-5xl font-black">#{order.orderNumber}</h2>
+              </div>
+              <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar mb-4">
+                <ul className="space-y-3 text-lg font-bold">
+                  {order.items.map((item, idx) => (
+                    <li key={idx} className="flex items-start">
+                      <span className="mr-3 text-[var(--color-secondary)] font-bold">•</span>
+                      <span className="leading-tight">{item.name}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
               
               <button
                 onClick={() => markAsReady(order.id)}
-                className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] text-white hover:text-[var(--color-primary)] font-black py-4 rounded-none text-xl mt-4 transition-colors uppercase tracking-widest border-2 border-[var(--color-primary)] hover:border-[var(--color-secondary)]"
+                className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] text-white hover:text-[var(--color-primary)] font-black py-4 rounded-none text-xl shrink-0 transition-colors uppercase tracking-widest border-2 border-[var(--color-primary)] hover:border-[var(--color-secondary)]"
               >
                 Marcar Listo
               </button>
