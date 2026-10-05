@@ -111,7 +111,7 @@ export default function Caja() {
   };
 
   return (
-    <div className="h-screen bg-[var(--color-background)] flex flex-col md:flex-row overflow-hidden font-sans">
+    <div className="h-[100dvh] bg-[var(--color-background)] flex flex-col md:flex-row overflow-hidden font-sans">
       {/* Menu Section */}
       <div className="flex-1 p-6 md:border-r-4 border-[var(--color-secondary)] overflow-y-auto bg-white">
         <div className="flex justify-between items-center mb-8 border-b-2 border-[var(--color-surface-dim)] pb-4">
@@ -146,23 +146,23 @@ export default function Caja() {
       </div>
 
       {/* Current Order Section */}
-      <div className="w-full md:w-[400px] lg:w-[450px] bg-[var(--color-primary)] p-6 shadow-2xl flex flex-col z-10 text-white greek-pattern-bg border-l-4 border-[var(--color-secondary)]">
-        <h2 className="text-2xl font-black text-white mb-6 uppercase tracking-widest border-b-2 border-[var(--color-secondary)] pb-4">Pedido Actual</h2>
+      <div className="w-full md:w-[350px] lg:w-[450px] bg-[var(--color-primary)] p-4 md:p-6 shadow-2xl flex flex-col z-10 text-white greek-pattern-bg border-t-4 md:border-t-0 md:border-l-4 border-[var(--color-secondary)]">
+        <h2 className="text-xl md:text-2xl font-black text-white mb-4 uppercase tracking-widest border-b-2 border-[var(--color-secondary)] pb-2 md:pb-4 shrink-0">Pedido Actual</h2>
         
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-          <div className="mb-6">
-            <label className="block text-sm font-bold mb-2 uppercase tracking-wider text-[var(--color-secondary)]">Nombre del Invitado</label>
+          <div className="mb-4 shrink-0">
+            <label className="block text-xs md:text-sm font-bold mb-1 md:mb-2 uppercase tracking-wider text-[var(--color-secondary)]">Nombre del Invitado</label>
             <input
               type="text"
               required
-              className="w-full p-4 rounded-none border-2 border-[var(--color-secondary)] bg-white/10 text-white placeholder-white/50 focus:bg-white focus:text-[var(--color-primary)] focus:outline-none transition-colors font-bold text-lg"
+              className="w-full p-2 md:p-4 rounded-none border-2 border-[var(--color-secondary)] bg-white/10 text-white placeholder-white/50 focus:bg-white focus:text-[var(--color-primary)] focus:outline-none transition-colors font-bold text-base md:text-lg"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
               placeholder="Ej. Aquiles"
             />
           </div>
 
-          <div className="flex-1 overflow-y-auto mb-6 bg-white/5 p-4 border-2 border-white/20 custom-scrollbar">
+          <div className="flex-1 overflow-y-auto min-h-0 mb-4 bg-white/5 p-2 md:p-4 border-2 border-white/20 custom-scrollbar">
             {selectedItems.length === 0 ? (
               <p className="text-center text-white/50 mt-10 font-serif italic">Ningún manjar seleccionado</p>
             ) : (
@@ -181,13 +181,13 @@ export default function Caja() {
           </div>
 
           {selectedItems.length > 0 && (
-            <div className="mb-4 flex justify-between items-center text-2xl font-black text-[var(--color-secondary)]">
+            <div className="mb-2 shrink-0 flex justify-between items-center text-xl md:text-2xl font-black text-[var(--color-secondary)]">
               <span>TOTAL:</span>
               <span>${selectedItems.reduce((sum, item) => sum + item.price, 0)}</span>
             </div>
           )}
 
-          <div className="mb-6">
+          <div className="mb-4 shrink-0">
             <input
               type="file"
               accept="image/*"
@@ -221,7 +221,7 @@ export default function Caja() {
           <button
             type="submit"
             disabled={!customerName || selectedItems.length === 0}
-            className="w-full bg-[var(--color-secondary)] text-[var(--color-primary)] py-4 rounded-none font-black text-lg disabled:opacity-50 hover:bg-white transition-colors mt-auto uppercase tracking-widest border-2 border-[var(--color-secondary)]"
+            className="w-full bg-[var(--color-secondary)] text-[var(--color-primary)] py-3 md:py-4 rounded-none font-black text-base md:text-lg disabled:opacity-50 hover:bg-white transition-colors mt-auto shrink-0 uppercase tracking-widest border-2 border-[var(--color-secondary)]"
           >
             Enviar a Cocina
           </button>
