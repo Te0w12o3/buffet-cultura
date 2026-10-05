@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 const MENU_ITEMS = [
-  { id: 1, name: 'Empanada de Carne', category: 'Entradas', price: 1500 },
+  { id: 1, name: 'Empanada de Carne', category: 'Platos Principales', price: 1500 },
   { id: 2, name: 'Porción de Locro', category: 'Platos Principales', price: 4500 },
   { id: 3, name: 'Choripán', category: 'Platos Principales', price: 3000 },
   { id: 4, name: 'Gaseosa Cola', category: 'Bebidas', price: 1200 },
@@ -124,17 +124,23 @@ export default function Caja() {
           <button onClick={() => navigate('/')} className="text-sm font-bold text-[var(--color-primary)] hover:text-[var(--color-secondary)] uppercase tracking-widest transition-colors">Volver</button>
         </div>
         
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {MENU_ITEMS.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => handleAddItem(item)}
-              className="p-4 bg-[var(--color-background)] rounded-none border-2 border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all text-left flex flex-col justify-between min-h-[110px] group"
-            >
-              <span className="text-xs font-bold text-[var(--color-secondary)] uppercase tracking-wider mb-2 group-hover:text-[var(--color-secondary-container)]">{item.category}</span>
-              <span className="font-bold text-lg group-hover:text-white text-[var(--color-primary)]">{item.name}</span>
-              <span className="font-bold text-md text-[var(--color-secondary)] mt-2">${item.price}</span>
-            </button>
+        <div className="flex flex-col gap-8">
+          {[...new Set(MENU_ITEMS.map(item => item.category))].map(category => (
+            <div key={category}>
+              <h3 className="text-xl font-bold text-[var(--color-primary)] mb-4 border-b-2 border-[var(--color-surface-dim)] pb-2 uppercase tracking-widest">{category}</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+                {MENU_ITEMS.filter(item => item.category === category).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => handleAddItem(item)}
+                    className="p-4 bg-[var(--color-background)] rounded-none border-2 border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all text-left flex flex-col justify-between min-h-[110px] group"
+                  >
+                    <span className="font-bold text-lg group-hover:text-white text-[var(--color-primary)]">{item.name}</span>
+                    <span className="font-bold text-md text-[var(--color-secondary)] mt-2">${item.price}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       </div>
