@@ -1,6 +1,6 @@
 import { useOrders } from '../store';
 import { useNavigate } from 'react-router-dom';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function Pantalla() {
   const { orders, markAsDelivered } = useOrders();
@@ -10,17 +10,44 @@ export default function Pantalla() {
   const ready = orders.filter(o => o.status === 'listo');
   
   const prevReadyLength = useRef(ready.length);
+  const [audioCtx, setAudioCtx] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(false);
 
   useEffect(() => {
-    if (ready.length > prevReadyLength.current) {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    setAudioCtx(ctx);
+    if (ctx.state === 'running') {
+      setSoundEnabled(true);
+    }
+    return () => ctx.close();
+  }, []);
+
+  const enableSound = async () => {
+    if (audioCtx) {
+      if (audioCtx.state === 'suspended') {
+        await audioCtx.resume();
+      }
+      setSoundEnabled(true);
+      // Truco para iOS: reproducir sonido inaudible para desbloquear el audio
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      gain.gain.value = 0;
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.001);
+    }
+  };
+
+  useEffect(() => {
+    if (ready.length > prevReadyLength.current && audioCtx && soundEnabled) {
       // Reproducir sonido de aviso tipo consultorio (ding-dong)
       try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const playNote = (freq, startTime, duration) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
           osc.connect(gain);
-          gain.connect(ctx.destination);
+          gain.connect(audioCtx.destination);
           osc.type = 'sine';
           osc.frequency.setValueAtTime(freq, startTime);
           gain.gain.setValueAtTime(0, startTime);
@@ -29,7 +56,7 @@ export default function Pantalla() {
           osc.start(startTime);
           osc.stop(startTime + duration);
         };
-        const now = ctx.currentTime;
+        const now = audioCtx.currentTime;
         playNote(659.25, now, 0.6); // E5
         playNote(523.25, now + 0.5, 0.8); // C5
       } catch (e) {
@@ -37,11 +64,23 @@ export default function Pantalla() {
       }
     }
     prevReadyLength.current = ready.length;
-  }, [ready.length]);
+  }, [ready.length, audioCtx, soundEnabled]);
 
   return (
     <div className="h-screen flex relative overflow-hidden bg-[var(--color-background)] font-sans selection:bg-[var(--color-secondary)] selection:text-white">
-      <button onClick={() => navigate('/')} className="absolute top-4 left-4 text-xs text-white/50 hover:text-white z-50 transition-colors uppercase tracking-widest font-bold">Volver</button>
+      <div className="absolute top-4 left-4 z-50 flex gap-4">
+        <button onClick={() => navigate('/')} className="text-xs text-white/50 hover:text-white transition-colors uppercase tracking-widest font-bold bg-black/20 px-3 py-1 rounded">Volver</button>
+        {!soundEnabled && (
+          <button onClick={enableSound} className="text-xs text-red-300 hover:text-white transition-colors uppercase tracking-widest font-bold bg-black/20 px-3 py-1 rounded border border-red-500/50 hover:border-white/50 animate-pulse">
+            Activar Sonido 🔇
+          </button>
+        )}
+        {soundEnabled && (
+          <div className="text-xs text-green-300 uppercase tracking-widest font-bold bg-black/20 px-3 py-1 rounded border border-green-500/50">
+            Sonido Activo 🔊
+          </div>
+        )}
+      </div>
 
       {/* Preparación Column (Aegean Blue) */}
       <div className="flex-1 bg-[var(--color-primary)] p-12 flex flex-col border-r-8 border-[var(--color-secondary)] greek-pattern-bg">
