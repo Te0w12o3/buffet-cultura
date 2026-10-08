@@ -1,5 +1,6 @@
 import { useOrders } from '../store';
 import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
 
 export default function Pantalla() {
   const { orders, markAsDelivered } = useOrders();
@@ -7,6 +8,36 @@ export default function Pantalla() {
 
   const preparing = orders.filter(o => o.status === 'preparacion');
   const ready = orders.filter(o => o.status === 'listo');
+  
+  const prevReadyLength = useRef(ready.length);
+
+  useEffect(() => {
+    if (ready.length > prevReadyLength.current) {
+      // Reproducir sonido de aviso tipo consultorio (ding-dong)
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const playNote = (freq, startTime, duration) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, startTime);
+          gain.gain.setValueAtTime(0, startTime);
+          gain.gain.linearRampToValueAtTime(0.5, startTime + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+          osc.start(startTime);
+          osc.stop(startTime + duration);
+        };
+        const now = ctx.currentTime;
+        playNote(659.25, now, 0.6); // E5
+        playNote(523.25, now + 0.5, 0.8); // C5
+      } catch (e) {
+        console.error('No se pudo reproducir el sonido', e);
+      }
+    }
+    prevReadyLength.current = ready.length;
+  }, [ready.length]);
 
   return (
     <div className="h-screen flex relative overflow-hidden bg-[var(--color-background)] font-sans selection:bg-[var(--color-secondary)] selection:text-white">
@@ -14,7 +45,7 @@ export default function Pantalla() {
 
       {/* Preparación Column (Aegean Blue) */}
       <div className="flex-1 bg-[var(--color-primary)] p-12 flex flex-col border-r-8 border-[var(--color-secondary)] greek-pattern-bg">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 h-24 flex items-end justify-center">
           <h1 className="inline-block text-4xl md:text-5xl font-black text-white tracking-[0.2em] border-b-2 border-[var(--color-secondary)] pb-4 uppercase">
             En Preparación
           </h1>
@@ -42,7 +73,7 @@ export default function Pantalla() {
         <div className="absolute bottom-0 left-0 w-32 h-32 border-b-8 border-l-8 border-[var(--color-secondary)] m-4 opacity-20 pointer-events-none"></div>
         <div className="absolute bottom-0 right-0 w-32 h-32 border-b-8 border-r-8 border-[var(--color-secondary)] m-4 opacity-20 pointer-events-none"></div>
 
-        <div className="text-center mb-12 relative z-10">
+        <div className="text-center mb-12 relative z-10 h-24 flex items-end justify-center">
           <h1 className="inline-block text-4xl md:text-5xl font-black text-[var(--color-primary)] tracking-[0.2em] border-b-2 border-[var(--color-secondary)] pb-4 uppercase">
             Listos Para Retirar
           </h1>
