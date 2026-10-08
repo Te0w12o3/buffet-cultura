@@ -4,13 +4,29 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 const MENU_ITEMS = [
-  { id: 1, name: 'Empanada de Carne', category: 'Platos Principales', price: 1500 },
-  { id: 2, name: 'Porción de Locro', category: 'Platos Principales', price: 4500 },
-  { id: 3, name: 'Choripán', category: 'Platos Principales', price: 3000 },
-  { id: 4, name: 'Gaseosa Cola', category: 'Bebidas', price: 1200 },
-  { id: 5, name: 'Vino Tinto (Copa)', category: 'Bebidas', price: 2000 },
-  { id: 6, name: 'Agua Mineral', category: 'Bebidas', price: 1000 },
-  { id: 7, name: 'Flan con Dulce de Leche', category: 'Postres', price: 1800 },
+  // Picada Griega
+  { id: 1, name: 'Skordalia', category: 'Picada Griega', price: 3500 },
+  { id: 2, name: 'Tzatziki', category: 'Picada Griega', price: 3500 },
+  { id: 3, name: 'Hummus', category: 'Picada Griega', price: 3500 },
+  { id: 4, name: 'Pan Pita', category: 'Picada Griega', price: 1500 },
+  { id: 5, name: 'Aceitunas', category: 'Picada Griega', price: 2000 },
+  
+  // Dulces
+  { id: 6, name: 'Melomakarona', category: 'Dulces', price: 2500 },
+  { id: 7, name: 'Bizcochuelo', category: 'Dulces', price: 2000 },
+  { id: 8, name: 'Torta', category: 'Dulces', price: 3000 },
+  { id: 9, name: 'Pasta Frola', category: 'Dulces', price: 2500 },
+
+  // Platos Principales
+  { id: 10, name: 'Empanadas', category: 'Platos Principales', price: 1500 },
+  { id: 11, name: 'Chipa', category: 'Platos Principales', price: 1000 },
+  { id: 12, name: 'Foccaccia', category: 'Platos Principales', price: 2500 },
+  { id: 13, name: 'Pizzetas', category: 'Platos Principales', price: 2000 },
+
+  // Bebidas
+  { id: 14, name: 'Vino', category: 'Bebidas', price: 3500 },
+  { id: 15, name: 'Cerveza', category: 'Bebidas', price: 2500 },
+  { id: 16, name: 'Gaseosa', category: 'Bebidas', price: 1500 },
 ];
 
 export default function Caja() {
