@@ -40,7 +40,10 @@ export default function Cocina() {
                   {groupedItems.map((item, idx) => (
                     <li key={idx} className="flex items-start">
                       <span className="mr-3 text-[var(--color-secondary)] font-bold">•</span>
-                      <span className="leading-tight">{item.quantity}x {item.name}</span>
+                      <span className="leading-tight">
+                        <span className="text-red-600 font-black mr-2">{item.quantity}</span>
+                        {item.name}
+                      </span>
                     </li>
                   ))}
                 </ul>
