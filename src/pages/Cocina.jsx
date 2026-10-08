@@ -30,7 +30,7 @@ export default function Cocina() {
                   {order.items.map((item, idx) => (
                     <li key={idx} className="flex items-start">
                       <span className="mr-3 text-[var(--color-secondary)] font-bold">•</span>
-                      <span className="leading-tight">{item.name}</span>
+                      <span className="leading-tight">{item.quantity}x {item.name}</span>
                     </li>
                   ))}
                 </ul>
