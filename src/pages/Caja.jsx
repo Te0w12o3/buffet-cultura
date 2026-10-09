@@ -29,6 +29,8 @@ export default function Caja() {
   const [receiptImage, setReceiptImage] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showReceiptsModal, setShowReceiptsModal] = useState(false);
+  const [showChangeModal, setShowChangeModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState('');
   const fileInputRef = useRef(null);
   const { addOrder, orders } = useOrders();
   const navigate = useNavigate();
@@ -105,6 +107,15 @@ export default function Caja() {
     e.preventDefault();
     if (!customerName || selectedItems.length === 0) return;
 
+    if (!receiptImage) {
+      setShowChangeModal(true);
+      return;
+    }
+
+    processOrder();
+  };
+
+  const processOrder = () => {
     const orderNumber = orders.length + 101;
 
     addOrder({
@@ -118,6 +129,8 @@ export default function Caja() {
     setCustomerName('');
     setSelectedItems([]);
     setReceiptImage(null);
+    setShowChangeModal(false);
+    setPaymentAmount('');
   };
 
   return (
@@ -302,6 +315,67 @@ export default function Caja() {
                   </div>
                 ))
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Vuelto */}
+      {showChangeModal && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md flex flex-col rounded-none shadow-2xl border-4 border-[var(--color-secondary)] text-center p-6 md:p-8">
+            <h3 className="text-3xl font-black uppercase tracking-widest text-[var(--color-primary)] mb-6">Calculadora de Vuelto</h3>
+            
+            <div className="mb-6">
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Total a Cobrar</p>
+              <p className="text-5xl font-black text-[#ba1a1a]">
+                ${selectedItems.reduce((sum, item) => sum + item.price, 0)}
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-sm font-bold mb-2 uppercase tracking-wider text-[var(--color-primary)]">Abona con:</label>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-400">$</span>
+                <input
+                  type="number"
+                  autoFocus
+                  className="w-full p-4 pl-10 rounded-none border-4 border-gray-200 focus:border-[var(--color-secondary)] focus:outline-none transition-colors font-black text-3xl text-center"
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  placeholder="0"
+                />
+              </div>
+            </div>
+
+            <div className="mb-8 p-4 bg-gray-50 border-2 border-gray-200">
+              <p className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-2">Vuelto a entregar</p>
+              <p className={`text-4xl font-black ${paymentAmount && Number(paymentAmount) >= selectedItems.reduce((sum, item) => sum + item.price, 0) ? 'text-[#34a853]' : 'text-gray-400'}`}>
+                ${paymentAmount && Number(paymentAmount) >= selectedItems.reduce((sum, item) => sum + item.price, 0) 
+                  ? Number(paymentAmount) - selectedItems.reduce((sum, item) => sum + item.price, 0) 
+                  : '0'}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={processOrder}
+                className="w-full bg-[var(--color-primary)] text-white py-4 rounded-none font-black text-xl uppercase tracking-widest hover:bg-[var(--color-secondary)] transition-colors"
+              >
+                Confirmar y Enviar
+              </button>
+              <button 
+                onClick={processOrder}
+                className="w-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] py-3 rounded-none font-bold text-sm uppercase tracking-widest hover:bg-gray-100 transition-colors"
+              >
+                Saltar (Sin calcular vuelto)
+              </button>
+              <button 
+                onClick={() => { setShowChangeModal(false); setPaymentAmount(''); }}
+                className="w-full text-gray-400 py-2 rounded-none font-bold text-sm underline hover:text-gray-600 transition-colors mt-2"
+              >
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
