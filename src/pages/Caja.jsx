@@ -147,24 +147,32 @@ export default function Caja() {
           <button onClick={() => navigate('/')} className="text-sm font-bold text-[var(--color-primary)] hover:text-[var(--color-secondary)] uppercase tracking-widest transition-colors">Volver</button>
         </div>
         
-        <div className="flex flex-col gap-8">
-          {[...new Set(MENU_ITEMS.map(item => item.category))].map(category => (
-            <div key={category}>
-              <h3 className="text-xl font-bold text-[var(--color-primary)] mb-4 border-b-2 border-[var(--color-surface-dim)] pb-2 uppercase tracking-widest">{category}</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-                {MENU_ITEMS.filter(item => item.category === category).map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleAddItem(item)}
-                    className="p-4 bg-[var(--color-background)] rounded-none border-2 border-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-all text-left flex flex-col justify-between min-h-[110px] group"
-                  >
-                    <span className="font-bold text-lg group-hover:text-white text-[var(--color-primary)]">{item.name}</span>
-                    <span className="font-bold text-md text-[var(--color-secondary)] mt-2">${item.price}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
+        <div className="flex gap-2 md:gap-4 mb-6 justify-start items-center flex-wrap border-b-2 border-[var(--color-surface-dim)] pb-4">
+          <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#e91e63]">Dulces</span>
+          <span className="text-sm md:text-lg font-bold text-gray-300">•</span>
+          <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#f57c00]">Platos Principales</span>
+          <span className="text-sm md:text-lg font-bold text-gray-300">•</span>
+          <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#1976d2]">Bebidas</span>
+        </div>
+        
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
+          {MENU_ITEMS.map((item) => {
+            let colors = { border: 'border-[var(--color-primary)]', hover: 'hover:bg-[var(--color-primary)]', text: 'text-[var(--color-primary)]' };
+            if (item.category === 'Dulces') colors = { border: 'border-[#e91e63]', hover: 'hover:bg-[#e91e63]', text: 'text-[#e91e63]' };
+            if (item.category === 'Platos Principales') colors = { border: 'border-[#f57c00]', hover: 'hover:bg-[#f57c00]', text: 'text-[#f57c00]' };
+            if (item.category === 'Bebidas') colors = { border: 'border-[#1976d2]', hover: 'hover:bg-[#1976d2]', text: 'text-[#1976d2]' };
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleAddItem(item)}
+                className={`p-3 md:p-4 bg-[var(--color-background)] rounded-none border-2 ${colors.border} ${colors.hover} hover:text-white transition-all text-left flex flex-col justify-between min-h-[100px] md:min-h-[110px] group`}
+              >
+                <span className={`font-bold text-base md:text-lg group-hover:text-white ${colors.text}`}>{item.name}</span>
+                <span className="font-bold text-sm md:text-md text-gray-500 group-hover:text-white mt-2">${item.price}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
