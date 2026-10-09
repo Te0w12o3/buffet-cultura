@@ -4,13 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
 const MENU_ITEMS = [
-  // Picada Griega
-  { id: 1, name: 'Skordalia', category: 'Picada Griega', price: 3500 },
-  { id: 2, name: 'Tzatziki', category: 'Picada Griega', price: 3500 },
-  { id: 3, name: 'Hummus', category: 'Picada Griega', price: 3500 },
-  { id: 4, name: 'Pan Pita', category: 'Picada Griega', price: 1500 },
-  { id: 5, name: 'Aceitunas', category: 'Picada Griega', price: 2000 },
-  
   // Dulces
   { id: 6, name: 'Melomakarona', category: 'Dulces', price: 2500 },
   { id: 7, name: 'Bizcochuelo', category: 'Dulces', price: 2000 },
@@ -22,6 +15,7 @@ const MENU_ITEMS = [
   { id: 11, name: 'Chipa', category: 'Platos Principales', price: 1000 },
   { id: 12, name: 'Foccaccia', category: 'Platos Principales', price: 2500 },
   { id: 13, name: 'Pizzetas', category: 'Platos Principales', price: 2000 },
+  { id: 1, name: 'PICADA GRIEGA', category: 'Platos Principales', price: 14000 },
 
   // Bebidas
   { id: 14, name: 'Vino', category: 'Bebidas', price: 3500 },
