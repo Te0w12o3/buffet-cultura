@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, push, set, update } from "firebase/database";
+import { INITIAL_STOCK } from './menu';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC_71Nilx99APcPBLDiDBxhvqEdv4okBcE",
@@ -66,4 +67,73 @@ export function useOrders() {
   };
 
   return { orders, addOrder, markAsReady, markAsDelivered };
+}
+
+export function useStock() {
+  const [stock, setStock] = useState(INITIAL_STOCK);
+
+  useEffect(() => {
+    const stockRef = ref(db, 'stock');
+
+    const unsubscribe = onValue(stockRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setStock(prev => ({ ...INITIAL_STOCK, ...data }));
+      } else {
+        // Inicializar stock en Firebase si no existe
+        set(stockRef, INITIAL_STOCK).catch(err => {
+          console.warn("No se pudo inicializar stock en Firebase:", err);
+        });
+        setStock(INITIAL_STOCK);
+      }
+    }, (error) => {
+      console.error("Firebase Stock Read Error:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const reduceStock = (items) => {
+    const counts = {};
+    items.forEach(item => {
+      counts[item.id] = (counts[item.id] || 0) + 1;
+    });
+
+    const stockRef = ref(db, 'stock');
+    setStock(prev => {
+      const updated = { ...prev };
+      const updates = {};
+      Object.entries(counts).forEach(([id, qty]) => {
+        const current = updated[id] ?? INITIAL_STOCK[id] ?? 0;
+        const newQty = Math.max(0, current - qty);
+        updated[id] = newQty;
+        updates[id] = newQty;
+      });
+
+      update(stockRef, updates).catch(err => {
+        console.error("Firebase Stock Update Error:", err);
+      });
+
+      return updated;
+    });
+  };
+
+  const updateItemStock = (id, newQty) => {
+    const parsed = Math.max(0, parseInt(newQty, 10) || 0);
+    const itemRef = ref(db, `stock/${id}`);
+    setStock(prev => ({ ...prev, [id]: parsed }));
+    set(itemRef, parsed).catch(err => {
+      console.error("Firebase Stock Update Item Error:", err);
+    });
+  };
+
+  const resetStock = () => {
+    const stockRef = ref(db, 'stock');
+    setStock(INITIAL_STOCK);
+    set(stockRef, INITIAL_STOCK).catch(err => {
+      console.error("Firebase Reset Stock Error:", err);
+    });
+  };
+
+  return { stock, reduceStock, updateItemStock, resetStock };
 }
