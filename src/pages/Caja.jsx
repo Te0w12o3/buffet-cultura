@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useOrders, useStock } from '../store';
 import { MENU_ITEMS } from '../menu';
 import { useNavigate } from 'react-router-dom';
@@ -12,11 +12,24 @@ export default function Caja() {
   const [showReceiptsModal, setShowReceiptsModal] = useState(false);
   const [showStockModal, setShowStockModal] = useState(false);
   const [showChangeModal, setShowChangeModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [lastCompletedOrder, setLastCompletedOrder] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const fileInputRef = useRef(null);
   const { addOrder, orders } = useOrders();
   const { stock, reduceStock, updateItemStock, resetStock } = useStock();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (showSuccessModal && (e.key === 'Enter' || e.key === 'Escape')) {
+        setShowSuccessModal(false);
+        setLastCompletedOrder(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showSuccessModal]);
 
   const handleImageCapture = (e) => {
     const file = e.target.files[0];
@@ -107,17 +120,29 @@ export default function Caja() {
   };
 
   const processOrder = () => {
-    const orderNumber = orders.length + 101;
+    const highestNumber = orders.reduce((max, o) => Math.max(max, o.orderNumber || 0), 100);
+    const orderNumber = highestNumber + 1;
+    const total = selectedItems.reduce((sum, item) => sum + item.price, 0);
+    const paymentMethod = receiptImage ? 'transferencia' : 'efectivo';
 
     addOrder({
       customerName,
       items: selectedItems,
       orderNumber,
-      paymentMethod: receiptImage ? 'transferencia' : 'efectivo',
+      paymentMethod,
       receiptImage: receiptImage || null
     });
 
     reduceStock(selectedItems);
+
+    setLastCompletedOrder({
+      orderNumber,
+      customerName,
+      total,
+      itemsCount: selectedItems.length,
+      paymentMethod
+    });
+    setShowSuccessModal(true);
 
     setCustomerName('');
     setSelectedItems([]);
@@ -499,6 +524,59 @@ export default function Caja() {
                 Cancelar
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación de Pedido Enviado */}
+      {showSuccessModal && lastCompletedOrder && (
+        <div 
+          className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-6 backdrop-blur-sm"
+          onClick={() => { setShowSuccessModal(false); setLastCompletedOrder(null); }}
+        >
+          <div 
+            className="bg-white w-full max-w-md flex flex-col rounded-none shadow-2xl border-4 border-[var(--color-secondary)] text-center p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-16 h-16 mx-auto mb-3 bg-emerald-100 rounded-full flex items-center justify-center text-3xl shadow-inner">
+              ✓
+            </div>
+
+            <h3 className="text-2xl md:text-3xl font-black uppercase tracking-widest text-[var(--color-primary)] mb-1">
+              ¡Pedido Enviado!
+            </h3>
+            <p className="text-xs md:text-sm font-bold text-emerald-600 uppercase tracking-widest mb-6">
+              Enviado a Cocina con éxito
+            </p>
+
+            <div className="p-6 bg-gradient-to-b from-blue-50 to-amber-50/50 border-4 border-[var(--color-secondary)] mb-6 shadow-md">
+              <p className="text-xs uppercase tracking-widest font-black text-[var(--color-secondary)]">Número de Orden</p>
+              <div className="text-7xl md:text-8xl font-black text-[var(--color-primary)] tracking-tight my-2 drop-shadow-sm">
+                #{lastCompletedOrder.orderNumber}
+              </div>
+              <p className="text-xl font-black text-gray-800 uppercase tracking-wider truncate">
+                {lastCompletedOrder.customerName}
+              </p>
+            </div>
+
+            <div className="flex justify-between items-center text-sm font-bold text-gray-600 mb-6 px-2 border-y border-gray-100 py-3">
+              <span>{lastCompletedOrder.itemsCount} {lastCompletedOrder.itemsCount === 1 ? 'ítem' : 'ítems'}</span>
+              <span className="text-base text-[var(--color-primary)] font-black">Total: ${lastCompletedOrder.total}</span>
+              <span className="uppercase text-xs px-2.5 py-1 rounded bg-gray-200 text-gray-800 font-black">
+                {lastCompletedOrder.paymentMethod}
+              </span>
+            </div>
+
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                setLastCompletedOrder(null);
+              }}
+              autoFocus
+              className="w-full bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] text-white hover:text-[var(--color-primary)] py-4 rounded-none font-black text-xl uppercase tracking-widest transition-colors border-2 border-[var(--color-primary)] hover:border-[var(--color-secondary)] cursor-pointer"
+            >
+              Nuevo Pedido (Enter)
+            </button>
           </div>
         </div>
       )}
