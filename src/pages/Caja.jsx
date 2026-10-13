@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useOrders, useStock } from '../store';
-import { MENU_ITEMS } from '../menu';
+import { useOrders, useStock, useMenuItems } from '../store';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 
@@ -16,9 +15,18 @@ export default function Caja() {
   const [lastCompletedOrder, setLastCompletedOrder] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const fileInputRef = useRef(null);
+
   const { addOrder, orders } = useOrders();
+  const { menuItems, customItems, addMenuItem, removeMenuItem } = useMenuItems();
   const { stock, reduceStock, updateItemStock, resetStock } = useStock();
   const navigate = useNavigate();
+
+  // Estados para el formulario lateral de nuevo producto
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemCategory, setNewItemCategory] = useState('Platos Principales');
+  const [newItemPrice, setNewItemPrice] = useState('');
+  const [newItemStock, setNewItemStock] = useState('');
+  const [productAddedSuccess, setProductAddedSuccess] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -151,16 +159,44 @@ export default function Caja() {
     setPaymentAmount('');
   };
 
+  const handleCreateProduct = (e) => {
+    e.preventDefault();
+    if (!newItemName.trim() || !newItemPrice || newItemStock === '') return;
+
+    addMenuItem({
+      name: newItemName,
+      category: newItemCategory,
+      price: Number(newItemPrice),
+      stock: Number(newItemStock)
+    });
+
+    setNewItemName('');
+    setNewItemPrice('');
+    setNewItemStock('');
+    setProductAddedSuccess(true);
+    setTimeout(() => setProductAddedSuccess(false), 3000);
+  };
+
   return (
     <div className="h-[100dvh] bg-[var(--color-background)] flex flex-col md:flex-row overflow-hidden font-sans">
       {/* Menu Section */}
       <div className="flex-1 p-6 md:border-r-4 border-[var(--color-secondary)] overflow-y-auto bg-white">
         <div className="flex justify-between items-center mb-8 border-b-2 border-[var(--color-surface-dim)] pb-4">
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(true)} className="p-2 text-[var(--color-primary)] hover:bg-gray-100 transition-colors focus:outline-none">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsSidebarOpen(true)} 
+              className="p-2 text-[var(--color-primary)] hover:bg-gray-100 transition-colors focus:outline-none cursor-pointer"
+              title="Abrir Menú Lateral"
+            >
               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 6h16M4 12h16M4 18h16" /></svg>
             </button>
-            <h2 className="text-3xl font-black text-[var(--color-primary)] uppercase tracking-widest">Menú del Banquete</h2>
+            <h2 className="text-2xl md:text-3xl font-black text-[var(--color-primary)] uppercase tracking-widest">Menú del Banquete</h2>
+            <button 
+              onClick={() => setIsSidebarOpen(true)} 
+              className="text-xs bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] text-white hover:text-[var(--color-primary)] font-black px-3 py-2 uppercase tracking-wider transition-colors border-2 border-[var(--color-primary)] hover:border-[var(--color-secondary)] cursor-pointer flex items-center gap-1.5"
+            >
+              <span>➕</span> Agregar Producto
+            </button>
           </div>
           <button onClick={() => navigate('/')} className="text-sm font-bold text-[var(--color-primary)] hover:text-[var(--color-secondary)] uppercase tracking-widest transition-colors">Volver</button>
         </div>
@@ -174,7 +210,7 @@ export default function Caja() {
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-          {MENU_ITEMS.map((item) => {
+          {menuItems.map((item) => {
             let colors = { border: 'border-[var(--color-primary)]', hover: 'hover:bg-[var(--color-primary)]', text: 'text-[var(--color-primary)]' };
             if (item.category === 'Dulces') colors = { border: 'border-[#e91e63]', hover: 'hover:bg-[#e91e63]', text: 'text-[#e91e63]' };
             if (item.category === 'Platos Principales') colors = { border: 'border-[#f57c00]', hover: 'hover:bg-[#f57c00]', text: 'text-[#f57c00]' };
@@ -322,36 +358,155 @@ export default function Caja() {
         <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setIsSidebarOpen(false)}></div>
       )}
 
-      {/* Sidebar */}
-      <div className={`fixed top-0 left-0 h-full w-80 bg-white z-50 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
-        <div className="p-6 border-b-4 border-[var(--color-secondary)] flex justify-between items-center bg-[var(--color-primary)] text-white">
-          <h3 className="text-xl font-black uppercase tracking-widest">Administración</h3>
-          <button onClick={() => setIsSidebarOpen(false)} className="text-white hover:text-[#ffdad6] text-3xl leading-none">&times;</button>
+      {/* Sidebar Lateral */}
+      <div className={`fixed top-0 left-0 h-full w-84 sm:w-96 bg-white z-50 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col`}>
+        <div className="p-5 border-b-4 border-[var(--color-secondary)] flex justify-between items-center bg-[var(--color-primary)] text-white shrink-0">
+          <div>
+            <h3 className="text-xl font-black uppercase tracking-widest">Administración</h3>
+            <p className="text-xs text-[var(--color-secondary)] uppercase tracking-wider mt-0.5">Gestión del Evento</p>
+          </div>
+          <button onClick={() => setIsSidebarOpen(false)} className="text-white hover:text-[#ffdad6] text-3xl leading-none cursor-pointer">&times;</button>
         </div>
-        <div className="p-6 flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+
+        <div className="p-5 flex-1 flex flex-col gap-5 overflow-y-auto custom-scrollbar">
+          {/* SECCIÓN: Formulario para Agregar Producto */}
+          <div className="bg-gray-50 border-2 border-[var(--color-primary)] p-4 shadow-sm">
+            <div className="flex items-center justify-between border-b-2 border-gray-200 pb-2 mb-3">
+              <h4 className="font-black text-sm uppercase tracking-wider text-[var(--color-primary)] flex items-center gap-1.5">
+                <span>➕</span> Agregar Producto
+              </h4>
+              <span className="text-[10px] bg-[var(--color-secondary)] text-[var(--color-primary)] font-black px-1.5 py-0.5 uppercase tracking-wider">
+                Para el Evento
+              </span>
+            </div>
+
+            <form onSubmit={handleCreateProduct} className="flex flex-col gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Nombre del Producto</label>
+                <input
+                  type="text"
+                  required
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Ej. Tarta de verdura, Hamburguesa..."
+                  className="w-full p-2 border-2 border-gray-300 focus:border-[var(--color-primary)] focus:outline-none text-sm font-bold bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Categoría</label>
+                <select
+                  value={newItemCategory}
+                  onChange={(e) => setNewItemCategory(e.target.value)}
+                  className="w-full p-2 border-2 border-gray-300 focus:border-[var(--color-primary)] focus:outline-none text-sm font-bold bg-white cursor-pointer"
+                >
+                  <option value="Platos Principales">Platos Principales</option>
+                  <option value="Dulces">Dulces</option>
+                  <option value="Bebidas">Bebidas</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Precio ($)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="50"
+                    value={newItemPrice}
+                    onChange={(e) => setNewItemPrice(e.target.value)}
+                    placeholder="2500"
+                    className="w-full p-2 border-2 border-gray-300 focus:border-[var(--color-primary)] focus:outline-none text-sm font-black bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Stock Inicial</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    value={newItemStock}
+                    onChange={(e) => setNewItemStock(e.target.value)}
+                    placeholder="20"
+                    className="w-full p-2 border-2 border-gray-300 focus:border-[var(--color-primary)] focus:outline-none text-sm font-black bg-white"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full mt-1 bg-[var(--color-primary)] hover:bg-[var(--color-secondary)] text-white hover:text-[var(--color-primary)] font-black py-2.5 rounded-none text-xs uppercase tracking-widest transition-colors border-2 border-[var(--color-primary)] hover:border-[var(--color-secondary)] cursor-pointer"
+              >
+                Guardar en Menú
+              </button>
+
+              {productAddedSuccess && (
+                <div className="p-2 bg-emerald-100 border border-emerald-400 text-emerald-800 text-xs font-bold text-center">
+                  ✅ ¡Producto agregado exitosamente!
+                </div>
+              )}
+            </form>
+
+            {/* Listita de productos agregados en el evento con opción de borrado rápido */}
+            {customItems.length > 0 && (
+              <div className="border-t border-gray-200 mt-3 pt-3">
+                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
+                  Agregados para este evento ({customItems.length}):
+                </p>
+                <div className="space-y-1.5 max-h-32 overflow-y-auto custom-scrollbar">
+                  {customItems.map((item) => (
+                    <div key={item.id} className="flex justify-between items-center text-xs p-2 bg-white border border-gray-200 shadow-xs">
+                      <div className="truncate pr-2">
+                        <span className="font-bold text-[var(--color-primary)]">{item.name}</span>
+                        <span className="text-gray-500 text-[10px] ml-1">(${item.price})</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`¿Seguro que querés quitar "${item.name}" del menú?`)) {
+                            removeMenuItem(item.id);
+                          }
+                        }}
+                        className="text-red-500 hover:text-red-700 font-bold px-1.5 py-0.5 text-xs rounded hover:bg-red-50 cursor-pointer"
+                        title="Eliminar producto"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Opciones de Administración */}
           <div className="flex flex-col gap-2">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest px-2">Exportar a Excel</p>
-            <button onClick={() => handleDownloadExcel('dia')} className="w-full p-4 text-left border-2 border-[var(--color-primary)] font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Opciones de Administración</p>
+            <button onClick={() => { setShowStockModal(true); setIsSidebarOpen(false); }} className="w-full p-3.5 text-left border-2 border-[var(--color-tertiary)] font-bold text-[var(--color-tertiary)] hover:bg-[var(--color-tertiary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
+              Control de Stock
+              <span className="text-xl">📦</span>
+            </button>
+            <button onClick={() => { setShowReceiptsModal(true); setIsSidebarOpen(false); }} className="w-full p-3.5 text-left border-2 border-[var(--color-secondary)] font-bold text-[var(--color-secondary)] hover:bg-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors uppercase tracking-wider flex items-center justify-between">
+              Ver Comprobantes
+              <span className="text-xl">🧾</span>
+            </button>
+          </div>
+
+          {/* Exportar a Excel */}
+          <div className="flex flex-col gap-2">
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Exportar a Excel</p>
+            <button onClick={() => handleDownloadExcel('dia')} className="w-full p-3.5 text-left border-2 border-[var(--color-primary)] font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
               Ventas del Día
               <span className="text-xl">📅</span>
             </button>
-            <button onClick={() => handleDownloadExcel('total')} className="w-full p-4 text-left border-2 border-[var(--color-primary)] font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
+            <button onClick={() => handleDownloadExcel('total')} className="w-full p-3.5 text-left border-2 border-[var(--color-primary)] font-bold text-[var(--color-primary)] hover:bg-[var(--color-primary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
               Ventas Totales
               <span className="text-xl">📊</span>
             </button>
           </div>
           
-          <button onClick={() => { setShowReceiptsModal(true); setIsSidebarOpen(false); }} className="w-full p-4 mt-2 text-left border-2 border-[var(--color-secondary)] font-bold text-[var(--color-secondary)] hover:bg-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors uppercase tracking-wider flex items-center justify-between">
-            Ver Comprobantes
-            <span className="text-xl">🧾</span>
-          </button>
-
-          <button onClick={() => { setShowStockModal(true); setIsSidebarOpen(false); }} className="w-full p-4 text-left border-2 border-[var(--color-tertiary)] font-bold text-[var(--color-tertiary)] hover:bg-[var(--color-tertiary)] hover:text-white transition-colors uppercase tracking-wider flex items-center justify-between">
-            Control de Stock
-            <span className="text-xl">📦</span>
-          </button>
-          
-          <div className="mt-auto pt-6 border-t-2 border-gray-100">
+          <div className="mt-auto pt-4 border-t-2 border-gray-100 shrink-0">
             <div className="text-center">
               <p className="text-sm uppercase tracking-widest text-gray-400 font-bold mb-1">Total del Día</p>
               <p className="text-3xl font-black text-[var(--color-primary)]">
@@ -371,24 +526,29 @@ export default function Caja() {
                 <h3 className="text-xl md:text-2xl font-black uppercase tracking-widest">Control y Ajuste de Stock</h3>
                 <p className="text-xs text-[var(--color-secondary)] tracking-wider mt-1">Modificá el inventario disponible en tiempo real</p>
               </div>
-              <button onClick={() => setShowStockModal(false)} className="text-white hover:text-[#ffdad6] text-4xl leading-none">&times;</button>
+              <button onClick={() => setShowStockModal(false)} className="text-white hover:text-[#ffdad6] text-4xl leading-none cursor-pointer">&times;</button>
             </div>
             
             <div className="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {MENU_ITEMS.map((item) => {
+                {menuItems.map((item) => {
                   const currentQty = stock[item.id] ?? 0;
                   return (
                     <div key={item.id} className="p-4 border-2 border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <p className="font-black text-sm md:text-base text-[var(--color-primary)] truncate">{item.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-black text-sm md:text-base text-[var(--color-primary)] truncate">{item.name}</p>
+                          {item.isCustom && (
+                            <span className="text-[9px] bg-[var(--color-secondary)] text-[var(--color-primary)] font-black px-1 rounded uppercase">Nuevo</span>
+                          )}
+                        </div>
                         <p className="text-xs text-gray-500 font-bold uppercase">{item.category} • ${item.price}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => updateItemStock(item.id, Math.max(0, currentQty - 1))}
-                          className="w-8 h-8 rounded border-2 border-gray-300 hover:border-[var(--color-primary)] font-black text-lg bg-white flex items-center justify-center text-[var(--color-primary)] hover:bg-gray-100"
+                          className="w-8 h-8 rounded border-2 border-gray-300 hover:border-[var(--color-primary)] font-black text-lg bg-white flex items-center justify-center text-[var(--color-primary)] hover:bg-gray-100 cursor-pointer"
                         >
                           -
                         </button>
@@ -402,7 +562,7 @@ export default function Caja() {
                         <button
                           type="button"
                           onClick={() => updateItemStock(item.id, currentQty + 1)}
-                          className="w-8 h-8 rounded border-2 border-gray-300 hover:border-[var(--color-primary)] font-black text-lg bg-white flex items-center justify-center text-[var(--color-primary)] hover:bg-gray-100"
+                          className="w-8 h-8 rounded border-2 border-gray-300 hover:border-[var(--color-primary)] font-black text-lg bg-white flex items-center justify-center text-[var(--color-primary)] hover:bg-gray-100 cursor-pointer"
                         >
                           +
                         </button>
@@ -418,7 +578,7 @@ export default function Caja() {
                 type="button"
                 onClick={() => {
                   if (window.confirm("¿Seguro que querés restablecer todo el stock a los valores iniciales?")) {
-                    resetStock();
+                    resetStock(customItems);
                   }
                 }}
                 className="text-xs text-red-600 hover:text-red-800 font-bold uppercase tracking-wider underline cursor-pointer"
@@ -428,7 +588,7 @@ export default function Caja() {
               <button
                 type="button"
                 onClick={() => setShowStockModal(false)}
-                className="w-full sm:w-auto px-6 py-2 bg-[var(--color-primary)] text-white font-black uppercase tracking-wider hover:bg-[var(--color-secondary)] transition-colors"
+                className="w-full sm:w-auto px-6 py-2 bg-[var(--color-primary)] text-white font-black uppercase tracking-wider hover:bg-[var(--color-secondary)] transition-colors cursor-pointer"
               >
                 Listo
               </button>
@@ -443,7 +603,7 @@ export default function Caja() {
           <div className="bg-white w-full max-w-5xl max-h-[90vh] flex flex-col rounded-none shadow-2xl border-4 border-[var(--color-secondary)]">
             <div className="p-6 border-b-4 border-[var(--color-secondary)] flex justify-between items-center bg-[var(--color-primary)] text-white">
               <h3 className="text-2xl font-black uppercase tracking-widest">Comprobantes de Transferencia</h3>
-              <button onClick={() => setShowReceiptsModal(false)} className="text-white hover:text-[#ffdad6] text-4xl leading-none">&times;</button>
+              <button onClick={() => setShowReceiptsModal(false)} className="text-white hover:text-[#ffdad6] text-4xl leading-none cursor-pointer">&times;</button>
             </div>
             <div className="p-6 overflow-y-auto flex-1 bg-gray-50 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {orders.filter(o => o.receiptImage).length === 0 ? (
@@ -507,19 +667,19 @@ export default function Caja() {
             <div className="flex flex-col gap-4">
               <button 
                 onClick={processOrder}
-                className="w-full bg-[var(--color-primary)] text-white py-4 rounded-none font-black text-xl uppercase tracking-widest hover:bg-[var(--color-secondary)] transition-colors"
+                className="w-full bg-[var(--color-primary)] text-white py-4 rounded-none font-black text-xl uppercase tracking-widest hover:bg-[var(--color-secondary)] transition-colors cursor-pointer"
               >
                 Confirmar y Enviar
               </button>
               <button 
                 onClick={processOrder}
-                className="w-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] py-3 rounded-none font-bold text-sm uppercase tracking-widest hover:bg-gray-100 transition-colors"
+                className="w-full border-2 border-[var(--color-primary)] text-[var(--color-primary)] py-3 rounded-none font-bold text-sm uppercase tracking-widest hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 Saltar (Sin calcular vuelto)
               </button>
               <button 
                 onClick={() => { setShowChangeModal(false); setPaymentAmount(''); }}
-                className="w-full text-gray-400 py-2 rounded-none font-bold text-sm underline hover:text-gray-600 transition-colors mt-2"
+                className="w-full text-gray-400 py-2 rounded-none font-bold text-sm underline hover:text-gray-600 transition-colors mt-2 cursor-pointer"
               >
                 Cancelar
               </button>

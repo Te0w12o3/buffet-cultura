@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, push, set, update } from "firebase/database";
-import { INITIAL_STOCK } from './menu';
+import { INITIAL_STOCK, MENU_ITEMS } from './menu';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC_71Nilx99APcPBLDiDBxhvqEdv4okBcE",
@@ -69,6 +69,65 @@ export function useOrders() {
   return { orders, addOrder, markAsReady, markAsDelivered };
 }
 
+export function useMenuItems() {
+  const [customItems, setCustomItems] = useState([]);
+
+  useEffect(() => {
+    const customRef = ref(db, 'customMenuItems');
+    const unsubscribe = onValue(customRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const list = Object.entries(data).map(([key, val]) => ({
+          ...val,
+          id: val.id || key
+        }));
+        setCustomItems(list);
+      } else {
+        setCustomItems([]);
+      }
+    }, (error) => {
+      console.error("Firebase Custom Menu Items Read Error:", error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const addMenuItem = ({ name, price, stock: itemStock, category = 'Platos Principales' }) => {
+    const newId = 'custom_' + Date.now();
+    const newItem = {
+      id: newId,
+      name: name.trim(),
+      price: Number(price) || 0,
+      category: category || 'Platos Principales',
+      initialStock: Number(itemStock) || 0,
+      isCustom: true
+    };
+
+    set(ref(db, `customMenuItems/${newId}`), newItem).catch(err => {
+      console.error("Firebase Add Custom Item Error:", err);
+    });
+
+    set(ref(db, `stock/${newId}`), Number(itemStock) || 0).catch(err => {
+      console.error("Firebase Set Custom Stock Error:", err);
+    });
+
+    return newItem;
+  };
+
+  const removeMenuItem = (id) => {
+    set(ref(db, `customMenuItems/${id}`), null).catch(err => {
+      console.error("Firebase Remove Custom Item Error:", err);
+    });
+    set(ref(db, `stock/${id}`), null).catch(err => {
+      console.error("Firebase Remove Stock Error:", err);
+    });
+  };
+
+  const menuItems = [...MENU_ITEMS, ...customItems];
+
+  return { menuItems, customItems, addMenuItem, removeMenuItem };
+}
+
 export function useStock() {
   const [stock, setStock] = useState(INITIAL_STOCK);
 
@@ -127,10 +186,18 @@ export function useStock() {
     });
   };
 
-  const resetStock = () => {
+  const resetStock = (currentCustomItems = []) => {
     const stockRef = ref(db, 'stock');
-    setStock(INITIAL_STOCK);
-    set(stockRef, INITIAL_STOCK).catch(err => {
+    const resetValues = { ...INITIAL_STOCK };
+    if (Array.isArray(currentCustomItems)) {
+      currentCustomItems.forEach(item => {
+        if (item.id && item.initialStock !== undefined) {
+          resetValues[item.id] = item.initialStock;
+        }
+      });
+    }
+    setStock(resetValues);
+    set(stockRef, resetValues).catch(err => {
       console.error("Firebase Reset Stock Error:", err);
     });
   };
