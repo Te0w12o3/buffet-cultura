@@ -16,7 +16,13 @@ export default function Caja() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const fileInputRef = useRef(null);
 
-  const { addOrder, orders } = useOrders();
+  const { 
+    addOrder, 
+    orders, 
+    resetOrdersAndCounter, 
+    setStartingNumber, 
+    startNumber 
+  } = useOrders();
   const { menuItems, customItems, addMenuItem, removeMenuItem } = useMenuItems();
   const { stock, reduceStock, updateItemStock, resetStock } = useStock();
   const navigate = useNavigate();
@@ -127,9 +133,11 @@ export default function Caja() {
     processOrder();
   };
 
+  const highestNumber = orders.reduce((max, o) => Math.max(max, o.orderNumber || 0), (startNumber || 1) - 1);
+  const nextOrderNumber = highestNumber + 1;
+
   const processOrder = () => {
-    const highestNumber = orders.reduce((max, o) => Math.max(max, o.orderNumber || 0), 100);
-    const orderNumber = highestNumber + 1;
+    const orderNumber = nextOrderNumber;
     const total = selectedItems.reduce((sum, item) => sum + item.price, 0);
     const paymentMethod = receiptImage ? 'transferencia' : 'efectivo';
 
@@ -272,7 +280,12 @@ export default function Caja() {
 
       {/* Current Order Section */}
       <div className="w-full md:w-[350px] lg:w-[450px] bg-[var(--color-primary)] p-4 md:p-6 shadow-2xl flex flex-col z-10 text-white greek-pattern-bg border-t-4 md:border-t-0 md:border-l-4 border-[var(--color-secondary)]">
-        <h2 className="text-xl md:text-2xl font-black text-white mb-4 uppercase tracking-widest border-b-2 border-[var(--color-secondary)] pb-2 md:pb-4 shrink-0">Pedido Actual</h2>
+        <div className="flex justify-between items-center border-b-2 border-[var(--color-secondary)] pb-2 md:pb-4 mb-4 shrink-0">
+          <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-widest">Pedido Actual</h2>
+          <div className="bg-[var(--color-secondary)] text-[var(--color-primary)] px-2.5 py-1 font-black text-xs md:text-sm uppercase tracking-wider shadow-sm">
+            Próximo: #{nextOrderNumber}
+          </div>
+        </div>
         
         <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
           <div className="mb-4 shrink-0">
@@ -504,6 +517,67 @@ export default function Caja() {
               Ventas Totales
               <span className="text-xl">📊</span>
             </button>
+          </div>
+
+          {/* SECCIÓN: Reinicio de Contadores y Pedidos para el Evento */}
+          <div className="bg-red-50 border-2 border-red-300 p-4 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between border-b border-red-200 pb-2">
+              <h4 className="font-black text-xs uppercase tracking-wider text-red-900 flex items-center gap-1.5">
+                <span>🔄</span> Reiniciar para el Evento
+              </h4>
+              <span className="text-[9px] bg-red-200 text-red-900 font-black px-1.5 py-0.5 uppercase tracking-wider">
+                Zona Crítica
+              </span>
+            </div>
+
+            <p className="text-[11px] text-gray-600 leading-snug">
+              Borra los pedidos de prueba acumulados para que el primer pedido del evento arranque limpio desde el <strong>#1</strong>.
+            </p>
+
+            <div className="flex items-center justify-between bg-white p-2 border border-red-200 text-xs">
+              <span className="font-bold text-gray-600">Próximo ID a emitir:</span>
+              <span className="font-black text-sm text-[var(--color-primary)]">#{nextOrderNumber}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                const confirmed = window.confirm(
+                  "⚠️ ¿Estás seguro de que querés reiniciar el sistema para el evento?\n\nEsta acción borrará todos los pedidos anteriores de prueba y el próximo pedido comenzará exactamente en el #1."
+                );
+                if (confirmed) {
+                  resetOrdersAndCounter(1);
+                  alert("✅ ¡Listo! Sistema reiniciado. El próximo pedido será el #1.");
+                }
+              }}
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-2.5 text-xs uppercase tracking-widest transition-colors cursor-pointer border border-red-700 text-center"
+            >
+              Reiniciar Contador a #1
+            </button>
+
+            <div className="flex items-center gap-2 pt-2 border-t border-red-200">
+              <span className="text-[10px] font-bold text-gray-500 uppercase">O fijar otro ID:</span>
+              <input
+                type="number"
+                min="1"
+                placeholder={nextOrderNumber}
+                className="w-16 p-1 text-center font-black border border-gray-300 text-xs bg-white"
+                id="customStartInput"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const val = document.getElementById('customStartInput')?.value;
+                  if (val && Number(val) >= 1) {
+                    setStartingNumber(Number(val));
+                    alert(`✅ Próximo pedido fijado en #${val}`);
+                  }
+                }}
+                className="text-[10px] bg-gray-200 hover:bg-gray-300 font-bold px-2 py-1 uppercase tracking-wider text-gray-800 cursor-pointer"
+              >
+                Fijar
+              </button>
+            </div>
           </div>
           
           <div className="mt-auto pt-4 border-t-2 border-gray-100 shrink-0">
