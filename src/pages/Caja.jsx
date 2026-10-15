@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useOrders, useStock, useMenuItems } from '../store';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { stockKey, stockUnits } from '../menu';
 
 export default function Caja() {
   const [customerName, setCustomerName] = useState('');
@@ -103,15 +104,14 @@ export default function Caja() {
     XLSX.writeFile(workbook, fileName);
   };
 
-  const getAvailableStock = (itemId) => {
-    const total = stock[itemId] ?? 0;
-    const inCart = selectedItems.filter(i => i.id === itemId).length;
-    return Math.max(0, total - inCart);
+  const getAvailableStock = (item) => {
+    const key = stockKey(item);
+    const used = selectedItems.filter(i => stockKey(i) === key).reduce((s, i) => s + stockUnits(i), 0);
+    return Math.max(0, Math.floor(((stock[key] ?? 0) - used) / stockUnits(item)));
   };
 
   const handleAddItem = (item) => {
-    const available = getAvailableStock(item.id);
-    if (available <= 0) return;
+    if (getAvailableStock(item) <= 0) return;
     setSelectedItems([...selectedItems, item]);
   };
 
@@ -219,8 +219,8 @@ export default function Caja() {
             if (item.category === 'Bebidas') colors = { border: 'border-[#1976d2]', hover: 'hover:bg-[#1976d2]', text: 'text-[#1976d2]' };
 
             const inCart = selectedItems.filter(i => i.id === item.id).length;
-            const currentTotalStock = stock[item.id] ?? 0;
-            const available = Math.max(0, currentTotalStock - inCart);
+            const noStock = Math.floor((stock[stockKey(item)] ?? 0) / stockUnits(item)) === 0;
+            const available = getAvailableStock(item);
             const isOutOfStock = available <= 0;
 
             return (
@@ -252,14 +252,14 @@ export default function Caja() {
                   </span>
                   <span
                     className={`text-xs font-black px-2 py-0.5 uppercase tracking-wider rounded ${
-                      currentTotalStock === 0 || isOutOfStock
+                      noStock || isOutOfStock
                         ? 'bg-red-100 text-red-700'
                         : available <= 5
                           ? 'bg-amber-100 text-amber-800 group-hover:bg-amber-300 group-hover:text-amber-950'
                           : 'bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200 group-hover:text-emerald-950'
                     }`}
                   >
-                    {currentTotalStock === 0
+                    {noStock
                       ? 'Sin stock'
                       : isOutOfStock
                         ? 'Agotado (en pedido)'
@@ -537,11 +537,12 @@ export default function Caja() {
               type="button"
               onClick={() => {
                 const confirmed = window.confirm(
-                  "⚠️ ¿Estás seguro de que querés reiniciar el sistema para el evento?\n\nEsta acción borrará todos los pedidos anteriores de prueba y el próximo pedido comenzará exactamente en el #1."
+                  "⚠️ ¿Estás seguro de que querés reiniciar el sistema para el evento?\n\nEsta acción borrará todos los pedidos anteriores de prueba, restablecerá el stock a los valores iniciales y el próximo pedido comenzará exactamente en el #1."
                 );
                 if (confirmed) {
                   resetOrdersAndCounter(1);
-                  alert("✅ ¡Listo! Sistema reiniciado. El próximo pedido será el #1.");
+                  resetStock(customItems);
+                  alert("✅ ¡Listo! Sistema reiniciado y stock restablecido. El próximo pedido será el #1.");
                 }
               }}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-2.5 text-xs uppercase tracking-widest transition-colors cursor-pointer border border-red-700 text-center"
@@ -599,8 +600,9 @@ export default function Caja() {
             
             <div className="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {menuItems.map((item) => {
+                {menuItems.filter(item => stockKey(item) === item.id).map((item) => {
                   const currentQty = stock[item.id] ?? 0;
+                  const linked = menuItems.find(o => o.id !== item.id && stockKey(o) === item.id);
                   return (
                     <div key={item.id} className="p-4 border-2 border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
@@ -611,6 +613,9 @@ export default function Caja() {
                           )}
                         </div>
                         <p className="text-xs text-gray-500 font-bold uppercase">{item.category} • ${item.price}</p>
+                        {linked && (
+                          <p className="text-[11px] text-amber-700 font-bold">Compartido con {linked.name}: ≈ {Math.floor(currentQty / stockUnits(linked))} ({stockUnits(linked)} c/u)</p>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <button

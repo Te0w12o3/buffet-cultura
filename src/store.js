@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, push, set, update } from "firebase/database";
-import { INITIAL_STOCK, MENU_ITEMS } from './menu';
+import { INITIAL_STOCK, MENU_ITEMS, stockKey, stockUnits } from './menu';
 
 const firebaseConfig = {
   apiKey: "AIzaSyC_71Nilx99APcPBLDiDBxhvqEdv4okBcE",
@@ -171,7 +171,7 @@ export function useStock() {
     const unsubscribe = onValue(stockRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        setStock(prev => ({ ...INITIAL_STOCK, ...data }));
+        setStock({ ...INITIAL_STOCK, ...data });
       } else {
         // Inicializar stock en Firebase si no existe
         set(stockRef, INITIAL_STOCK).catch(err => {
@@ -189,7 +189,8 @@ export function useStock() {
   const reduceStock = (items) => {
     const counts = {};
     items.forEach(item => {
-      counts[item.id] = (counts[item.id] || 0) + 1;
+      const key = stockKey(item);
+      counts[key] = (counts[key] || 0) + stockUnits(item);
     });
 
     const stockRef = ref(db, 'stock');
