@@ -22,7 +22,7 @@ export default function Caja() {
     orders, 
     resetOrdersAndCounter, 
     setStartingNumber, 
-    startNumber 
+    nextOrderNumber 
   } = useOrders();
   const { menuItems, customItems, addMenuItem, removeMenuItem } = useMenuItems();
   const { stock, reduceStock, updateItemStock, resetStock } = useStock();
@@ -82,6 +82,10 @@ export default function Caja() {
     const dataToExport = filteredOrders.map(order => {
         const items = order.items?.map(i => i.name).join(' + ') || '';
         const total = order.items?.reduce((sum, item) => sum + item.price, 0) || 0;
+        const marcosTotal = order.items?.reduce((sum, item) => {
+          const isMarcosItem = item.id === 11 || item.id === 12 || /chipa|focc?accia/i.test(item.name || '');
+          return isMarcosItem ? sum + item.price : sum;
+        }, 0) || 0;
         const hasReceipt = order.receiptImage ? 'Sí (Comprobante Adjunto)' : 'No';
         
         return {
@@ -90,6 +94,7 @@ export default function Caja() {
           "Detalle de Compra": items,
           "Método de Pago": order.paymentMethod || 'Efectivo',
           "Total Pagado": total,
+          "Marcos": marcosTotal,
           "Comprobante MercadoPago": hasReceipt,
           "Fecha": order.createdAt ? new Date(order.createdAt).toLocaleString() : 'N/A'
         };
@@ -132,9 +137,6 @@ export default function Caja() {
 
     processOrder();
   };
-
-  const highestNumber = orders.reduce((max, o) => Math.max(max, o.orderNumber || 0), (startNumber || 1) - 1);
-  const nextOrderNumber = highestNumber + 1;
 
   const processOrder = () => {
     const orderNumber = nextOrderNumber;
@@ -213,10 +215,40 @@ export default function Caja() {
         
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
           {menuItems.map((item) => {
-            let colors = { border: 'border-[var(--color-primary)]', hover: 'hover:bg-[var(--color-primary)]', text: 'text-[var(--color-primary)]' };
-            if (item.category === 'Dulces') colors = { border: 'border-[#e91e63]', hover: 'hover:bg-[#e91e63]', text: 'text-[#e91e63]' };
-            if (item.category === 'Platos Principales') colors = { border: 'border-[#f57c00]', hover: 'hover:bg-[#f57c00]', text: 'text-[#f57c00]' };
-            if (item.category === 'Bebidas') colors = { border: 'border-[#1976d2]', hover: 'hover:bg-[#1976d2]', text: 'text-[#1976d2]' };
+            let colors = {
+              bg: 'bg-[var(--color-primary)]',
+              border: 'border-[var(--color-primary)]',
+              text: 'text-[var(--color-primary)]',
+              hoverText: 'group-hover:text-[var(--color-primary)]',
+              badge: 'bg-white text-[var(--color-primary)] group-hover:bg-[var(--color-primary)] group-hover:text-white',
+            };
+            if (item.category === 'Dulces') {
+              colors = {
+                bg: 'bg-[#e91e63]',
+                border: 'border-[#e91e63]',
+                text: 'text-[#e91e63]',
+                hoverText: 'group-hover:text-[#e91e63]',
+                badge: 'bg-white text-[#e91e63] group-hover:bg-[#e91e63] group-hover:text-white',
+              };
+            }
+            if (item.category === 'Platos Principales') {
+              colors = {
+                bg: 'bg-[#f57c00]',
+                border: 'border-[#f57c00]',
+                text: 'text-[#f57c00]',
+                hoverText: 'group-hover:text-[#f57c00]',
+                badge: 'bg-white text-[#f57c00] group-hover:bg-[#f57c00] group-hover:text-white',
+              };
+            }
+            if (item.category === 'Bebidas') {
+              colors = {
+                bg: 'bg-[#1976d2]',
+                border: 'border-[#1976d2]',
+                text: 'text-[#1976d2]',
+                hoverText: 'group-hover:text-[#1976d2]',
+                badge: 'bg-white text-[#1976d2] group-hover:bg-[#1976d2] group-hover:text-white',
+              };
+            }
 
             const inCart = selectedItems.filter(i => i.id === item.id).length;
             const noStock = Math.floor((stock[stockKey(item)] ?? 0) / stockUnits(item)) === 0;
@@ -229,25 +261,27 @@ export default function Caja() {
                 type="button"
                 disabled={isOutOfStock}
                 onClick={() => handleAddItem(item)}
-                className={`p-3 md:p-4 bg-[var(--color-background)] rounded-none border-2 ${colors.border} ${
+                className={`p-3 md:p-4 rounded-none border-2 ${colors.border} ${
                   isOutOfStock
                     ? 'opacity-40 cursor-not-allowed border-gray-300 bg-gray-100'
-                    : `${colors.hover} hover:text-white cursor-pointer`
+                    : `${colors.bg} hover:bg-white cursor-pointer`
                 } transition-all text-left flex flex-col justify-between min-h-[105px] md:min-h-[115px] group relative select-none`}
               >
                 <div className="flex justify-between items-start w-full gap-1">
-                  <span className={`font-bold text-base md:text-lg leading-tight ${isOutOfStock ? 'text-gray-400 line-through' : colors.text} ${!isOutOfStock && 'group-hover:text-white'}`}>
+                  <span className={`font-bold text-base md:text-lg leading-tight ${isOutOfStock ? 'text-gray-400 line-through' : `text-white ${colors.hoverText}`}`}>
                     {item.name}
                   </span>
                   {inCart > 0 && (
-                    <span className="bg-[var(--color-primary)] text-white text-xs font-black px-1.5 py-0.5 rounded-full shrink-0 group-hover:bg-white group-hover:text-[var(--color-primary)] shadow-sm">
+                    <span className={`text-xs font-black px-1.5 py-0.5 rounded-full shrink-0 shadow-sm transition-colors ${
+                      isOutOfStock ? 'bg-gray-400 text-white' : colors.badge
+                    }`}>
                       x{inCart}
                     </span>
                   )}
                 </div>
 
-                <div className="flex justify-between items-center w-full mt-2 pt-2 border-t border-gray-100 group-hover:border-white/20">
-                  <span className={`font-bold text-sm md:text-base ${isOutOfStock ? 'text-gray-400' : 'text-gray-600 group-hover:text-white'}`}>
+                <div className={`flex justify-between items-center w-full mt-2 pt-2 border-t ${isOutOfStock ? 'border-gray-200' : 'border-white/25 group-hover:border-gray-200'}`}>
+                  <span className={`font-bold text-sm md:text-base ${isOutOfStock ? 'text-gray-400' : `text-white ${colors.hoverText}`}`}>
                     ${item.price}
                   </span>
                   <span
@@ -255,8 +289,8 @@ export default function Caja() {
                       noStock || isOutOfStock
                         ? 'bg-red-100 text-red-700'
                         : available <= 5
-                          ? 'bg-amber-100 text-amber-800 group-hover:bg-amber-300 group-hover:text-amber-950'
-                          : 'bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200 group-hover:text-emerald-950'
+                          ? 'bg-amber-100 text-amber-900'
+                          : 'bg-emerald-100 text-emerald-900'
                     }`}
                   >
                     {noStock
@@ -525,7 +559,7 @@ export default function Caja() {
             </div>
 
             <p className="text-[11px] text-gray-600 leading-snug">
-              Borra los pedidos de prueba acumulados para que el primer pedido del evento arranque limpio desde el <strong>#1</strong>.
+              Reinicia el próximo número de pedido para el evento al <strong>#1</strong> sin borrar las ventas ni las pruebas anteriores.
             </p>
 
             <div className="flex items-center justify-between bg-white p-2 border border-red-200 text-xs">
@@ -537,12 +571,12 @@ export default function Caja() {
               type="button"
               onClick={() => {
                 const confirmed = window.confirm(
-                  "⚠️ ¿Estás seguro de que querés reiniciar el sistema para el evento?\n\nEsta acción borrará todos los pedidos anteriores de prueba, restablecerá el stock a los valores iniciales y el próximo pedido comenzará exactamente en el #1."
+                  "⚠️ ¿Estás seguro de que querés reiniciar el contador para el evento?\n\nEsta acción reiniciará el próximo pedido al #1 y restablecerá el stock a los valores iniciales. Las compras anteriores NO se borrarán."
                 );
                 if (confirmed) {
                   resetOrdersAndCounter(1);
                   resetStock(customItems);
-                  alert("✅ ¡Listo! Sistema reiniciado y stock restablecido. El próximo pedido será el #1.");
+                  alert("✅ ¡Listo! Próximo pedido fijado en #1 y stock restablecido. Las compras anteriores se conservaron.");
                 }
               }}
               className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-2.5 text-xs uppercase tracking-widest transition-colors cursor-pointer border border-red-700 text-center"

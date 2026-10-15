@@ -18,7 +18,7 @@ const db = getDatabase(app);
 
 export function useOrders() {
   const [orders, setOrders] = useState([]);
-  const [startNumber, setStartNumber] = useState(1);
+  const [nextOrderNumber, setNextOrderNumber] = useState(1);
 
   useEffect(() => {
     const ordersRef = ref(db, 'orders');
@@ -40,33 +40,40 @@ export function useOrders() {
       console.error("Firebase Read Error:", error);
     });
 
-    const configRef = ref(db, 'orderConfig/startNumber');
-    const unsubscribeConfig = onValue(configRef, (snapshot) => {
+    const counterRef = ref(db, 'orderConfig/nextOrderNumber');
+    const unsubscribeCounter = onValue(counterRef, (snapshot) => {
       const val = snapshot.val();
       if (val !== null && val !== undefined) {
-        setStartNumber(Number(val) || 1);
+        setNextOrderNumber(Number(val) || 1);
       } else {
-        setStartNumber(1);
+        setNextOrderNumber(1);
       }
     });
 
     return () => {
       unsubscribeOrders();
-      unsubscribeConfig();
+      unsubscribeCounter();
     };
   }, []);
 
   const addOrder = (orderData) => {
     const ordersRef = ref(db, 'orders');
     const newOrderRef = push(ordersRef);
+    const orderNum = orderData.orderNumber ?? nextOrderNumber;
     
     set(newOrderRef, {
       ...orderData,
+      orderNumber: orderNum,
       status: 'preparacion',
       createdAt: new Date().toISOString()
     }).catch(error => {
       console.error("Firebase Write Error:", error);
       alert("Error al guardar en base de datos. Revisa la consola o los permisos de Firebase.");
+    });
+
+    const counterRef = ref(db, 'orderConfig/nextOrderNumber');
+    set(counterRef, orderNum + 1).catch(err => {
+      console.error("Firebase Update Counter Error:", err);
     });
   };
 
@@ -81,15 +88,13 @@ export function useOrders() {
   };
 
   const resetOrdersAndCounter = (newStart = 1) => {
-    const ordersRef = ref(db, 'orders');
-    const configRef = ref(db, 'orderConfig/startNumber');
-    set(ordersRef, null).catch(err => console.error("Firebase Clear Orders Error:", err));
-    set(configRef, Number(newStart) || 1).catch(err => console.error("Firebase Set Start Number Error:", err));
+    const counterRef = ref(db, 'orderConfig/nextOrderNumber');
+    set(counterRef, Number(newStart) || 1).catch(err => console.error("Firebase Reset Counter Error:", err));
   };
 
   const setStartingNumber = (num) => {
-    const configRef = ref(db, 'orderConfig/startNumber');
-    set(configRef, Number(num) || 1).catch(err => console.error("Firebase Set Start Number Error:", err));
+    const counterRef = ref(db, 'orderConfig/nextOrderNumber');
+    set(counterRef, Number(num) || 1).catch(err => console.error("Firebase Set Start Number Error:", err));
   };
 
   return { 
@@ -99,7 +104,8 @@ export function useOrders() {
     markAsDelivered, 
     resetOrdersAndCounter, 
     setStartingNumber, 
-    startNumber 
+    nextOrderNumber,
+    startNumber: nextOrderNumber
   };
 }
 
