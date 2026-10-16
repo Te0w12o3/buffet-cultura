@@ -38,34 +38,26 @@ export default function Entrega() {
 
   return (
     <div className="min-h-screen bg-[var(--color-primary)] text-white font-sans greek-pattern-bg flex flex-col p-4 md:p-6 select-none">
-      {/* Encabezado adaptable a celulares */}
-      <div className="flex justify-between items-center pb-4 mb-4 border-b-2 border-[var(--color-secondary)]">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">📱</span>
-            <h1 className="text-xl md:text-2xl font-black uppercase tracking-wider text-white">Entrega de Pedidos</h1>
-          </div>
-          <p className="text-xs text-[var(--color-secondary)] uppercase tracking-wider mt-0.5">Control y Despacho Móvil</p>
-        </div>
-        <button 
-          onClick={() => navigate('/')} 
-          className="text-xs md:text-sm font-bold text-[var(--color-secondary)] hover:text-white uppercase tracking-widest border border-[var(--color-secondary)]/50 px-3 py-1.5 transition-colors cursor-pointer"
-        >
-          Volver
-        </button>
-      </div>
-
       {/* Notificación de último pedido entregado */}
       {lastDeliveredNumber && (
-        <div className="mb-4 bg-emerald-500/20 border-2 border-emerald-400 text-emerald-200 px-4 py-2.5 flex items-center justify-between text-sm font-bold shadow-md animate-fade-in">
+        <div className="mb-3 bg-emerald-500/20 border-2 border-emerald-400 text-emerald-200 px-4 py-2 flex items-center justify-between text-xs font-bold shadow-md animate-fade-in">
           <span>✅ Pedido <strong>#{lastDeliveredNumber}</strong> entregado correctamente.</span>
-          <button onClick={() => setLastDeliveredNumber(null)} className="text-white/70 hover:text-white text-lg leading-none cursor-pointer">&times;</button>
+          <button onClick={() => setLastDeliveredNumber(null)} className="text-white/70 hover:text-white text-base leading-none cursor-pointer">&times;</button>
         </div>
       )}
 
       {/* Contador y Estado */}
       <div className="flex justify-between items-center mb-4 bg-white/10 p-3 rounded border border-white/20">
-        <span className="text-xs uppercase tracking-wider text-white/80 font-bold">Banquete(s) listos:</span>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={() => navigate('/')} 
+            className="text-white/50 hover:text-white text-sm font-bold cursor-pointer pr-1"
+            title="Volver"
+          >
+            ←
+          </button>
+          <span className="text-xs uppercase tracking-wider text-white/80 font-bold">Banquete(s) listos:</span>
+        </div>
         <span className={`text-xs font-black px-2.5 py-1 uppercase tracking-wider ${
           readyOrders.length > 0 
             ? 'bg-emerald-500 text-white animate-pulse' 
