@@ -16,8 +16,8 @@ export const MENU_ITEMS = [
   { id: 25, name: 'Chipa x12', category: 'Platos Principales', price: 7500, stockKey: 11, stockUnits: 2 },
 
   // Bebidas
-  // Vino: stock compartido medido en vasos (36 botellas x 3 vasos); la botella descuenta 3 vasos.
-  { id: 14, name: 'Vino Vaso', category: 'Bebidas', price: 3000, initialStock: 36 * 3 },
+  // Vino: stock compartido medido en vasos (32 botellas x 3 vasos); la botella descuenta 3 vasos.
+  { id: 14, name: 'Vino Vaso', category: 'Bebidas', price: 3000, initialStock: 32 * 3 },
   { id: 22, name: 'Vino Botella', category: 'Bebidas', price: 8000, stockKey: 14, stockUnits: 3 },
   { id: 15, name: 'Cerveza', category: 'Bebidas', price: 3000, initialStock: 120 },
   { id: 20, name: 'Coca Cola', category: 'Bebidas', price: 2500, initialStock: 24 },
