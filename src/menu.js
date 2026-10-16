@@ -23,6 +23,9 @@ export const MENU_ITEMS = [
   { id: 20, name: 'Coca Cola', category: 'Bebidas', price: 2500, initialStock: 24 },
   { id: 21, name: 'Seven Up', category: 'Bebidas', price: 2500, initialStock: 24 },
   { id: 23, name: 'Café', category: 'Bebidas', price: 1000, initialStock: 100 },
+
+  // Promociones Especiales (al final de todo)
+  { id: 26, name: 'Promo 2 Bandejas Griegas', category: 'Promociones', price: 10000, stockKey: 1, stockUnits: 2, isPromo: true },
 ];
 
 export const stockKey = (item) => item.stockKey ?? item.id;

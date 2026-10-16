@@ -101,6 +101,14 @@ export default function Cocina() {
       return { displayName: 'Focaccia', units: 1, isSpecial: true };
     }
 
+    // Bandeja Griega: la promo de 2 bandejas se traduce a 2 Bandejas Griegas literales a preparar
+    if (id === 26 || (/bandeja/i.test(name) && (/2/.test(name) || /promo/i.test(name)))) {
+      return { displayName: 'Bandeja Griega', units: 2, isSpecial: false };
+    }
+    if (id === 1 || /bandeja/i.test(name)) {
+      return { displayName: 'Bandeja Griega', units: 1, isSpecial: false };
+    }
+
     return {
       displayName: name,
       units: 1,

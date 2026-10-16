@@ -211,10 +211,18 @@ export default function Caja() {
           <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#f57c00]">Platos Salados</span>
           <span className="text-sm md:text-lg font-bold text-gray-300">•</span>
           <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#1976d2]">Bebidas</span>
+          <span className="text-sm md:text-lg font-bold text-gray-300">•</span>
+          <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#7b1fa2]">Promociones</span>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3 md:gap-4">
-          {menuItems.map((item) => {
+          {[...menuItems].sort((a, b) => {
+            const aIsPromo = Boolean(a.isPromo || a.category === 'Promociones');
+            const bIsPromo = Boolean(b.isPromo || b.category === 'Promociones');
+            if (aIsPromo && !bIsPromo) return 1;
+            if (!aIsPromo && bIsPromo) return -1;
+            return 0;
+          }).map((item) => {
             let colors = {
               bg: 'bg-[var(--color-primary)]',
               border: 'border-[var(--color-primary)]',
@@ -249,11 +257,21 @@ export default function Caja() {
                 badge: 'bg-white text-[#1976d2] group-hover:bg-[#1976d2] group-hover:text-white',
               };
             }
+            if (item.category === 'Promociones' || item.isPromo) {
+              colors = {
+                bg: 'bg-[#7b1fa2]',
+                border: 'border-[#7b1fa2]',
+                text: 'text-[#7b1fa2]',
+                hoverText: 'group-hover:text-[#7b1fa2]',
+                badge: 'bg-white text-[#7b1fa2] group-hover:bg-[#7b1fa2] group-hover:text-white',
+              };
+            }
 
             const inCart = selectedItems.filter(i => i.id === item.id).length;
             const noStock = Math.floor((stock[stockKey(item)] ?? 0) / stockUnits(item)) === 0;
             const available = getAvailableStock(item);
             const isOutOfStock = available <= 0;
+            const isPromoItem = item.isPromo || item.category === 'Promociones';
 
             return (
               <button
@@ -268,9 +286,16 @@ export default function Caja() {
                 } transition-all text-left flex flex-col justify-between min-h-[105px] md:min-h-[115px] group relative select-none`}
               >
                 <div className="flex justify-between items-start w-full gap-1">
-                  <span className={`font-bold text-base md:text-lg leading-tight ${isOutOfStock ? 'text-gray-400 line-through' : `text-white ${colors.hoverText}`}`}>
-                    {item.name}
-                  </span>
+                  <div className="flex flex-col">
+                    {isPromoItem && (
+                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-300 mb-0.5 flex items-center gap-1">
+                        <span>⚡</span> Promo Especial
+                      </span>
+                    )}
+                    <span className={`font-bold text-base md:text-lg leading-tight ${isOutOfStock ? 'text-gray-400 line-through' : `text-white ${colors.hoverText}`}`}>
+                      {item.name}
+                    </span>
+                  </div>
                   {inCart > 0 && (
                     <span className={`text-xs font-black px-1.5 py-0.5 rounded-full shrink-0 shadow-sm transition-colors ${
                       isOutOfStock ? 'bg-gray-400 text-white' : colors.badge
@@ -444,6 +469,7 @@ export default function Caja() {
                   <option value="Platos Principales">Platos Principales</option>
                   <option value="Dulces">Dulces</option>
                   <option value="Bebidas">Bebidas</option>
+                  <option value="Promociones">Promociones</option>
                 </select>
               </div>
 
@@ -636,7 +662,7 @@ export default function Caja() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {menuItems.filter(item => stockKey(item) === item.id).map((item) => {
                   const currentQty = stock[item.id] ?? 0;
-                  const linked = menuItems.find(o => o.id !== item.id && stockKey(o) === item.id);
+                  const linkedItems = menuItems.filter(o => o.id !== item.id && stockKey(o) === item.id);
                   return (
                     <div key={item.id} className="p-4 border-2 border-gray-200 bg-gray-50 flex items-center justify-between gap-4">
                       <div className="flex-1 min-w-0">
@@ -647,9 +673,11 @@ export default function Caja() {
                           )}
                         </div>
                         <p className="text-xs text-gray-500 font-bold uppercase">{item.category} • ${item.price}</p>
-                        {linked && (
-                          <p className="text-[11px] text-amber-700 font-bold">Compartido con {linked.name}: ≈ {Math.floor(currentQty / stockUnits(linked))} ({stockUnits(linked)} c/u)</p>
-                        )}
+                        {linkedItems.map(linked => (
+                          <p key={linked.id} className="text-[11px] text-amber-700 font-bold">
+                            Compartido con {linked.name}: ≈ {Math.floor(currentQty / stockUnits(linked))} ({stockUnits(linked)} c/u)
+                          </p>
+                        ))}
                       </div>
                       <div className="flex items-center gap-2">
                         <button
