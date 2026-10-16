@@ -83,7 +83,7 @@ export default function Caja() {
         const items = order.items?.map(i => i.name).join(' + ') || '';
         const total = order.items?.reduce((sum, item) => sum + item.price, 0) || 0;
         const marcosTotal = order.items?.reduce((sum, item) => {
-          const isMarcosItem = item.id === 11 || item.id === 12 || /chipa|focc?accia/i.test(item.name || '');
+          const isMarcosItem = item.id === 11 || item.id === 12 || item.id === 24 || item.id === 25 || /chipa|foc/i.test(item.name || '');
           return isMarcosItem ? sum + item.price : sum;
         }, 0) || 0;
         const hasReceipt = order.receiptImage ? 'Sí (Comprobante Adjunto)' : 'No';
@@ -208,7 +208,7 @@ export default function Caja() {
         <div className="flex gap-2 md:gap-4 mb-6 justify-start items-center flex-wrap border-b-2 border-[var(--color-surface-dim)] pb-4">
           <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#e91e63]">Dulces</span>
           <span className="text-sm md:text-lg font-bold text-gray-300">•</span>
-          <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#f57c00]">Platos Principales</span>
+          <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#f57c00]">Platos Salados</span>
           <span className="text-sm md:text-lg font-bold text-gray-300">•</span>
           <span className="text-sm md:text-lg font-bold uppercase tracking-widest text-[#1976d2]">Bebidas</span>
         </div>

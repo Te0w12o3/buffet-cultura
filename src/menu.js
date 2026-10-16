@@ -1,18 +1,19 @@
 export const MENU_ITEMS = [
-  // Dulces
-  { id: 6, name: 'Melomakarona', category: 'Dulces', price: 1000, initialStock: 25 },
-  { id: 7, name: 'Bizcochuelo', category: 'Dulces', price: 2000, initialStock: 15 },
+  // Platos Dulces
+  { id: 17, name: 'Kurabiedes', category: 'Dulces', price: 1000, initialStock: 20 },
+  { id: 6, name: 'Melomakáruna', category: 'Dulces', price: 1000, initialStock: 25 },
   { id: 8, name: 'Torta', category: 'Dulces', price: 2000, initialStock: 12 },
-  { id: 9, name: 'Pasta Frola', category: 'Dulces', price: 2000, initialStock: 18 },
-  { id: 17, name: 'Kourabiede', category: 'Dulces', price: 1000, initialStock: 20 },
+  { id: 9, name: 'Pastafrola', category: 'Dulces', price: 2000, initialStock: 18 },
 
-  // Platos Principales
+  // Platos Salados
+  { id: 13, name: 'Pizetas', category: 'Platos Principales', price: 2000, initialStock: 30 },
   { id: 18, name: 'Emp Carne', category: 'Platos Principales', price: 2500, initialStock: 108 },
   { id: 19, name: 'Emp J&Q', category: 'Platos Principales', price: 2500, initialStock: 36 },
-  { id: 11, name: 'Chipa', category: 'Platos Principales', price: 1000, initialStock: 40 },
-  { id: 12, name: 'Foccaccia', category: 'Platos Principales', price: 2500, initialStock: 20 },
-  { id: 13, name: 'Pizzetas', category: 'Platos Principales', price: 2000, initialStock: 30 },
-  { id: 1, name: 'PICADA GRIEGA', category: 'Platos Principales', price: 7000, initialStock: 50 },
+  { id: 1, name: 'Bandeja Griega', category: 'Platos Principales', price: 7000, initialStock: 50 },
+  { id: 12, name: 'Focaccia x1', category: 'Platos Principales', price: 4000, initialStock: 20 },
+  { id: 24, name: 'Focaccia x2', category: 'Platos Principales', price: 6000, stockKey: 12, stockUnits: 2 },
+  { id: 11, name: 'Chipa x6', category: 'Platos Principales', price: 4000, initialStock: 40 },
+  { id: 25, name: 'Chipa x12', category: 'Platos Principales', price: 7500, stockKey: 11, stockUnits: 2 },
 
   // Bebidas
   // Vino: stock compartido medido en vasos (36 botellas x 3 vasos); la botella descuenta 3 vasos.
