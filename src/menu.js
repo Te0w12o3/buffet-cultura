@@ -35,3 +35,62 @@ export const INITIAL_STOCK = MENU_ITEMS.reduce((acc, item) => {
   if (item.initialStock !== undefined) acc[item.id] = item.initialStock;
   return acc;
 }, {});
+
+export const getKitchenItemInfo = (item) => {
+  const name = item.name || '';
+  const id = item.id;
+  
+  // Chipá: 6u o 12u se traducen a la cantidad exacta de unidades individuales a hornear
+  if (id === 25 || (/chip[aá]/i.test(name) && /12/.test(name))) {
+    return { displayName: 'Chipá', units: 12, isSpecial: true };
+  }
+  if (id === 11 || (/chip[aá]/i.test(name) && /6/.test(name))) {
+    return { displayName: 'Chipá', units: 6, isSpecial: true };
+  }
+  if (/chip[aá]/i.test(name)) {
+    return { displayName: 'Chipá', units: 1, isSpecial: true };
+  }
+
+  // Focaccia: x2 se traduce a 2 focaccias, x1 a 1 focaccia
+  if (id === 24 || (/foc/i.test(name) && /2/.test(name))) {
+    return { displayName: 'Focaccia', units: 2, isSpecial: true };
+  }
+  if (id === 12 || /foc/i.test(name)) {
+    return { displayName: 'Focaccia', units: 1, isSpecial: true };
+  }
+
+  // Bandeja Griega: la promo de 2 bandejas se traduce a 2 Bandejas Griegas literales a preparar
+  if (id === 26 || (/bandeja/i.test(name) && (/2/.test(name) || /promo/i.test(name)))) {
+    return { displayName: 'Bandeja Griega', units: 2, isSpecial: false };
+  }
+  if (id === 1 || /bandeja/i.test(name)) {
+    return { displayName: 'Bandeja Griega', units: 1, isSpecial: false };
+  }
+
+  return {
+    displayName: name,
+    units: 1,
+    isSpecial: false
+  };
+};
+
+export const groupOrderItems = (rawItems = []) => {
+  return Object.values(rawItems.reduce((acc, rawItem) => {
+    const { displayName, units, isSpecial } = getKitchenItemInfo(rawItem);
+    const itemQty = typeof rawItem.quantity === 'number' && rawItem.quantity > 0 ? rawItem.quantity : 1;
+    const unitsToAdd = itemQty * units;
+
+    if (acc[displayName]) {
+      acc[displayName].quantity += unitsToAdd;
+    } else {
+      acc[displayName] = {
+        ...rawItem,
+        name: displayName,
+        quantity: unitsToAdd,
+        isSpecial
+      };
+    }
+    return acc;
+  }, {}));
+};
+

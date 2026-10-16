@@ -55,6 +55,9 @@ export default function Login() {
             <button onClick={() => selectRole('/cocina')} className="w-full p-4 rounded-none border-2 border-[var(--color-tertiary)] text-[var(--color-tertiary)] font-bold text-lg hover:bg-[var(--color-tertiary)] hover:text-white transition-colors uppercase tracking-wider">
               Cocina (Tablet)
             </button>
+            <button onClick={() => selectRole('/entrega')} className="w-full p-4 rounded-none border-2 border-emerald-600 text-emerald-700 font-bold text-lg hover:bg-emerald-600 hover:text-white transition-colors uppercase tracking-wider">
+              Entrega (Celular)
+            </button>
             <button onClick={() => selectRole('/pantalla')} className="w-full p-4 rounded-none border-2 border-[var(--color-secondary)] text-[var(--color-secondary)] font-bold text-lg hover:bg-[var(--color-secondary)] hover:text-[var(--color-primary)] transition-colors uppercase tracking-wider bg-[var(--color-primary)]">
               Pantalla Pública (PC)
             </button>

@@ -3,6 +3,7 @@ import Login from './pages/Login';
 import Caja from './pages/Caja';
 import Cocina from './pages/Cocina';
 import Pantalla from './pages/Pantalla';
+import Entrega from './pages/Entrega';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/caja" element={<Caja />} />
         <Route path="/cocina" element={<Cocina />} />
         <Route path="/pantalla" element={<Pantalla />} />
+        <Route path="/entrega" element={<Entrega />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>

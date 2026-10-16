@@ -1,6 +1,7 @@
 import { useOrders } from '../store';
 import { useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
+import { groupOrderItems } from '../menu';
 
 export default function Cocina() {
   const { orders, markAsReady } = useOrders();
@@ -78,44 +79,6 @@ export default function Cocina() {
     prevPendingLength.current = pendingOrders.length;
   }, [pendingOrders.length, audioCtx, soundEnabled]);
 
-  const getKitchenItemInfo = (item) => {
-    const name = item.name || '';
-    const id = item.id;
-    
-    // Chipá: 6u o 12u se traducen a la cantidad exacta de unidades individuales a hornear
-    if (id === 25 || (/chip[aá]/i.test(name) && /12/.test(name))) {
-      return { displayName: 'Chipá', units: 12, isSpecial: true };
-    }
-    if (id === 11 || (/chip[aá]/i.test(name) && /6/.test(name))) {
-      return { displayName: 'Chipá', units: 6, isSpecial: true };
-    }
-    if (/chip[aá]/i.test(name)) {
-      return { displayName: 'Chipá', units: 1, isSpecial: true };
-    }
-
-    // Focaccia: x2 se traduce a 2 focaccias, x1 a 1 focaccia
-    if (id === 24 || (/foc/i.test(name) && /2/.test(name))) {
-      return { displayName: 'Focaccia', units: 2, isSpecial: true };
-    }
-    if (id === 12 || /foc/i.test(name)) {
-      return { displayName: 'Focaccia', units: 1, isSpecial: true };
-    }
-
-    // Bandeja Griega: la promo de 2 bandejas se traduce a 2 Bandejas Griegas literales a preparar
-    if (id === 26 || (/bandeja/i.test(name) && (/2/.test(name) || /promo/i.test(name)))) {
-      return { displayName: 'Bandeja Griega', units: 2, isSpecial: false };
-    }
-    if (id === 1 || /bandeja/i.test(name)) {
-      return { displayName: 'Bandeja Griega', units: 1, isSpecial: false };
-    }
-
-    return {
-      displayName: name,
-      units: 1,
-      isSpecial: false
-    };
-  };
-
   return (
     <div className="h-screen flex flex-col bg-[var(--color-primary)] p-6 text-white font-sans greek-pattern-bg overflow-hidden">
       <div className="flex justify-between items-center mb-8 border-b-2 border-[var(--color-secondary)] pb-4 flex-wrap gap-3">
@@ -153,24 +116,7 @@ export default function Cocina() {
       ) : (
         <div className="flex-1 min-h-0 flex gap-6 pb-6 overflow-x-auto custom-scrollbar snap-x">
           {pendingOrders.map(order => {
-            const rawItems = order.items || [];
-            const groupedItems = Object.values(rawItems.reduce((acc, rawItem) => {
-              const { displayName, units, isSpecial } = getKitchenItemInfo(rawItem);
-              const itemQty = typeof rawItem.quantity === 'number' && rawItem.quantity > 0 ? rawItem.quantity : 1;
-              const unitsToAdd = itemQty * units;
-
-              if (acc[displayName]) {
-                acc[displayName].quantity += unitsToAdd;
-              } else {
-                acc[displayName] = {
-                  ...rawItem,
-                  name: displayName,
-                  quantity: unitsToAdd,
-                  isSpecial
-                };
-              }
-              return acc;
-            }, {}));
+            const groupedItems = groupOrderItems(order.items);
 
             const hasSpecial = groupedItems.some(i => i.isSpecial);
 
