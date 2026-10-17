@@ -21,8 +21,8 @@ export const MENU_ITEMS = [
   { id: 14, name: 'Vino Vaso', category: 'Bebidas', price: 3000, initialStock: 32 * 3 },
   { id: 22, name: 'Vino Botella', category: 'Bebidas', price: 8000, stockKey: 14, stockUnits: 3 },
   { id: 15, name: 'Cerveza', category: 'Bebidas', price: 3000, initialStock: 120 },
-  { id: 20, name: 'Coca Cola', category: 'Bebidas', price: 2500, initialStock: 24 },
-  { id: 21, name: 'Seven Up', category: 'Bebidas', price: 2500, initialStock: 24 },
+  { id: 20, name: 'Coca Cola', category: 'Bebidas', price: 2500, initialStock: 110 },
+  { id: 21, name: 'Seven Up', category: 'Bebidas', price: 2500, initialStock: 50 },
   { id: 23, name: 'Café', category: 'Bebidas', price: 1000, initialStock: 100 },
 
   // Promociones Especiales (al final de todo)
