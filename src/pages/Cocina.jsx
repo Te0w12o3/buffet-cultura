@@ -136,23 +136,33 @@ export default function Cocina() {
                     return (
                       <li 
                         key={idx} 
-                        className={`flex items-start p-2 rounded transition-colors ${
+                        className={`flex items-start p-2.5 rounded transition-colors ${
                           item.isSpecial 
-                            ? 'bg-amber-100/80 border-l-4 border-[#f57c00] text-amber-950 font-black shadow-xs' 
+                            ? 'bg-amber-100/90 border-l-4 border-[#f57c00] text-amber-950 font-black shadow-xs' 
                             : 'text-[var(--color-primary)]'
                         }`}
                       >
-                        <span className={`mr-2.5 font-bold ${item.isSpecial ? 'text-[#f57c00]' : 'text-[var(--color-secondary)]'}`}>
+                        <span className={`mr-2.5 font-bold mt-0.5 ${item.isSpecial ? 'text-[#f57c00]' : 'text-[var(--color-secondary)]'}`}>
                           {item.isSpecial ? '★' : '•'}
                         </span>
-                        <span className="leading-tight flex-1">
-                          <span className={`font-black mr-2 ${item.isSpecial ? 'text-white bg-[#f57c00] px-1.5 py-0.5 text-base' : 'text-red-600'}`}>
-                            {item.quantity}
-                          </span>
-                          <span className={item.isSpecial ? 'text-amber-950 font-black' : ''}>
-                            {item.name}
-                          </span>
-                        </span>
+                        <div className="leading-tight flex-1">
+                          <div className="flex items-center flex-wrap gap-1.5">
+                            <span className={`font-black mr-1 ${item.isSpecial ? 'text-white bg-[#f57c00] px-2 py-0.5 text-base shadow-xs' : 'text-red-600'}`}>
+                              {item.quantity}
+                            </span>
+                            <span className={`text-lg md:text-xl ${item.isSpecial ? 'text-amber-950 font-black' : ''}`}>
+                              {item.shortName || item.name}
+                            </span>
+                          </div>
+                          {item.flavor && (
+                            <div className="mt-1.5 flex items-center gap-1.5">
+                              <span className="inline-flex items-center gap-1 bg-[#f57c00] text-white text-xs font-black px-2.5 py-0.5 uppercase tracking-wider rounded shadow-xs">
+                                <span>🥖</span>
+                                <span>Gusto: {item.flavor}</span>
+                              </span>
+                            </div>
+                          )}
+                        </div>
                       </li>
                     );
                   })}

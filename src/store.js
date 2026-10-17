@@ -26,11 +26,31 @@ export function useOrders() {
     const unsubscribeOrders = onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        // Firebase returns an object with keys, convert to array
-        const ordersArray = Object.entries(data).map(([id, order]) => ({
-          id,
-          ...order
-        }));
+        const ordersArray = Object.entries(data).map(([id, order]) => {
+          let items = [];
+          if (Array.isArray(order.items)) {
+            items = order.items;
+          } else if (order.items && typeof order.items === 'object') {
+            items = Object.values(order.items);
+          }
+          const normalizedItems = items.map(item => {
+            if (!item) return item;
+            let focacciaFlavors = item.focacciaFlavors;
+            if (focacciaFlavors && !Array.isArray(focacciaFlavors) && typeof focacciaFlavors === 'object') {
+              focacciaFlavors = Object.values(focacciaFlavors);
+            }
+            return {
+              ...item,
+              focacciaFlavors
+            };
+          });
+
+          return {
+            id,
+            ...order,
+            items: normalizedItems
+          };
+        });
         // Sort by timestamp if needed, but array order usually fine
         setOrders(ordersArray);
       } else {
@@ -194,11 +214,23 @@ export function useStock() {
 
   const reduceStock = (items) => {
     const counts = {};
-    items.forEach(item => {
-      if (Array.isArray(item.focacciaFlavors) && item.focacciaFlavors.length > 0) {
-        item.focacciaFlavors.forEach(flavor => {
-          const flavorId = typeof flavor === 'object' ? flavor.id : flavor;
-          counts[flavorId] = (counts[flavorId] || 0) + 1;
+    const itemsList = Array.isArray(items) 
+      ? items 
+      : (items && typeof items === 'object' ? Object.values(items) : []);
+
+    itemsList.forEach(item => {
+      if (!item) return;
+      const rawFlavors = item.focacciaFlavors;
+      const flavorsList = Array.isArray(rawFlavors) 
+        ? rawFlavors 
+        : (rawFlavors && typeof rawFlavors === 'object' ? Object.values(rawFlavors) : []);
+
+      if (flavorsList.length > 0) {
+        flavorsList.forEach(flavor => {
+          const flavorId = typeof flavor === 'object' && flavor ? flavor.id : flavor;
+          if (flavorId) {
+            counts[flavorId] = (counts[flavorId] || 0) + 1;
+          }
           counts[12] = (counts[12] || 0) + 1;
         });
       } else {

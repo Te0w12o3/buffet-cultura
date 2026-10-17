@@ -110,6 +110,11 @@ export default function Entrega() {
                           ★ Chipá / Focaccia
                         </span>
                       )}
+                      {grouped.filter(i => i.flavor).map((fi, fidx) => (
+                        <span key={fidx} className="bg-amber-100 text-amber-950 border border-amber-300 text-[10px] font-black px-1.5 py-0.5 uppercase tracking-wider">
+                          🥖 {fi.quantity}x {fi.flavor}
+                        </span>
+                      ))}
                     </div>
                   </div>
                 </div>
@@ -205,16 +210,24 @@ export default function Entrega() {
                           {item.quantity}
                         </span>
 
-                        {/* Nombre del producto */}
-                        <span className={`text-base font-bold truncate ${
-                          isChecked 
-                            ? 'line-through text-gray-500' 
-                            : item.isSpecial 
-                              ? 'text-amber-950 font-black' 
-                              : 'text-[var(--color-primary)]'
-                        }`}>
-                          {item.name}
-                        </span>
+                        {/* Nombre del producto y gusto */}
+                        <div className="flex flex-col min-w-0">
+                          <span className={`text-base font-bold truncate ${
+                            isChecked 
+                              ? 'line-through text-gray-500' 
+                              : item.isSpecial 
+                                ? 'text-amber-950 font-black' 
+                                : 'text-[var(--color-primary)]'
+                          }`}>
+                            {item.shortName || item.name}
+                          </span>
+                          {item.flavor && (
+                            <span className="inline-flex items-center gap-1 text-xs font-black uppercase text-[#e65100] tracking-wider mt-0.5">
+                              <span>🥖</span>
+                              <span>Gusto: {item.flavor}</span>
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {item.isSpecial && (

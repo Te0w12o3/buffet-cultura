@@ -50,6 +50,84 @@ export const INITIAL_STOCK = {
   }, {}),
 };
 
+export const extractFocacciaFlavors = (rawItem = {}) => {
+  const name = String(rawItem.name || '');
+  const id = rawItem.id;
+  const isFoc = id === 12 || id === 24 || /foc/i.test(name);
+  if (!isFoc) return null;
+
+  // 1. Array u objeto directo focacciaFlavors
+  if (rawItem.focacciaFlavors) {
+    const list = Array.isArray(rawItem.focacciaFlavors)
+      ? rawItem.focacciaFlavors
+      : (typeof rawItem.focacciaFlavors === 'object' ? Object.values(rawItem.focacciaFlavors) : []);
+    const extracted = list
+      .map(f => (typeof f === 'object' && f !== null ? f.name : f))
+      .filter(Boolean);
+    if (extracted.length > 0) return extracted;
+  }
+
+  // 2. Propiedad flavorName
+  if (rawItem.flavorName) {
+    return [rawItem.flavorName];
+  }
+
+  // 3. Propiedad flavorSummary
+  if (rawItem.flavorSummary) {
+    const summary = String(rawItem.flavorSummary).trim();
+    if (/^2\s+/i.test(summary)) {
+      const flv = summary.replace(/^2\s+/i, '').trim();
+      return [flv, flv];
+    }
+    if (summary.includes('+')) {
+      return summary.split('+').map(s => s.trim()).filter(Boolean);
+    }
+    return [summary];
+  }
+
+  // 4. Paréntesis en el nombre del producto, ej: "Focaccia (Nerón)", "Focaccia x2 (Nerón + César)", "Focaccia x2 (2 Nerón)"
+  const parenMatch = name.match(/\(([^)]+)\)/);
+  if (parenMatch) {
+    const content = parenMatch[1].trim();
+    if (/^2\s+/i.test(content)) {
+      const flv = content.replace(/^2\s+/i, '').trim();
+      return [flv, flv];
+    }
+    if (content.includes('+')) {
+      return content.split('+').map(s => s.trim()).filter(Boolean);
+    }
+    const matched = FOCACCIA_FLAVORS.find(f => 
+      f.name.toLowerCase() === content.toLowerCase() ||
+      f.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() === content.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
+    );
+    if (matched) {
+      return [matched.name];
+    }
+    if (content.length > 0) {
+      return [content];
+    }
+  }
+
+  // 5. Búsqueda de nombres de gustos conocidos en la cadena del nombre
+  const found = [];
+  FOCACCIA_FLAVORS.forEach(f => {
+    const cleanFlv = f.name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const cleanName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    if (cleanName.includes(cleanFlv)) {
+      if (cleanName.includes('2 ' + cleanFlv) || cleanName.includes(cleanFlv + ' x2')) {
+        found.push(f.name, f.name);
+      } else {
+        found.push(f.name);
+      }
+    }
+  });
+  if (found.length > 0) return found;
+
+  // 6. Si no hay gusto especificado (ej. pedidos antiguos)
+  const isX2 = id === 24 || (/foc/i.test(name) && /2/.test(name));
+  return isX2 ? ['Clásica', 'Clásica'] : ['Clásica'];
+};
+
 export const getKitchenItemInfo = (item) => {
   const name = item.name || '';
   const id = item.id;
@@ -63,14 +141,6 @@ export const getKitchenItemInfo = (item) => {
   }
   if (/chip[aá]/i.test(name)) {
     return { displayName: 'Chipá', units: 1, isSpecial: true };
-  }
-
-  // Focaccia sin gustos específicos (compatibilidad): x2 se traduce a 2 focaccias, x1 a 1 focaccia
-  if (id === 24 || (/foc/i.test(name) && /2/.test(name))) {
-    return { displayName: 'Focaccia', units: 2, isSpecial: true };
-  }
-  if (id === 12 || /foc/i.test(name)) {
-    return { displayName: 'Focaccia', units: 1, isSpecial: true };
   }
 
   // Bandeja Griega: la promo de 2 bandejas se traduce a 2 Bandejas Griegas literales a preparar
@@ -91,23 +161,36 @@ export const getKitchenItemInfo = (item) => {
 export const groupOrderItems = (rawItems = []) => {
   const result = {};
 
-  rawItems.forEach(rawItem => {
-    // Si el item tiene gustos de focaccia seleccionados (focacciaFlavors)
-    if (Array.isArray(rawItem.focacciaFlavors) && rawItem.focacciaFlavors.length > 0) {
-      rawItem.focacciaFlavors.forEach(flavor => {
-        const flavorName = typeof flavor === 'object' ? flavor.name : flavor;
-        const displayName = `Focaccia ${flavorName}`;
-        if (result[displayName]) {
-          result[displayName].quantity += 1;
-        } else {
-          result[displayName] = {
-            id: rawItem.id,
-            name: displayName,
-            quantity: 1,
-            isSpecial: true,
-          };
-        }
-      });
+  const itemsList = Array.isArray(rawItems) 
+    ? rawItems 
+    : (rawItems && typeof rawItems === 'object' ? Object.values(rawItems) : []);
+
+  itemsList.forEach(rawItem => {
+    if (!rawItem) return;
+
+    // Si es Focaccia, extraemos los gustos específicos de forma garantizada
+    const focacciaFlavors = extractFocacciaFlavors(rawItem);
+    if (focacciaFlavors && focacciaFlavors.length > 0) {
+      const itemQty = typeof rawItem.quantity === 'number' && rawItem.quantity > 0 ? rawItem.quantity : 1;
+      
+      for (let q = 0; q < itemQty; q++) {
+        focacciaFlavors.forEach(flavor => {
+          const displayName = `Focaccia (${flavor})`;
+          if (result[displayName]) {
+            result[displayName].quantity += 1;
+          } else {
+            result[displayName] = {
+              id: rawItem.id,
+              name: displayName,
+              shortName: 'Focaccia',
+              flavor: flavor,
+              isFocaccia: true,
+              quantity: 1,
+              isSpecial: true,
+            };
+          }
+        });
+      }
       return;
     }
 
