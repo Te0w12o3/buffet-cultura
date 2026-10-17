@@ -12,7 +12,7 @@ export const MENU_ITEMS = [
   { id: 1, name: 'Bandeja Griega', category: 'Platos Principales', price: 7000, initialStock: 50 },
   { id: 12, name: 'Focaccia x1', category: 'Platos Principales', price: 4000, initialStock: 20 },
   { id: 24, name: 'Focaccia x2', category: 'Platos Principales', price: 6000, stockKey: 12, stockUnits: 2 },
-  { id: 11, name: 'Chipa x6', category: 'Platos Principales', price: 4000, initialStock: 40 },
+  { id: 11, name: 'Chipa x6', category: 'Platos Principales', price: 4500, initialStock: 40 },
   { id: 25, name: 'Chipa x12', category: 'Platos Principales', price: 7500, stockKey: 11, stockUnits: 2 },
 
   // Bebidas
