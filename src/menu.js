@@ -29,13 +29,26 @@ export const MENU_ITEMS = [
   { id: 26, name: 'Promo 2 Bandejas Griegas', category: 'Promociones', price: 10000, stockKey: 1, stockUnits: 2, isPromo: true },
 ];
 
+export const FOCACCIA_FLAVORS = [
+  { id: 'foc_neron', name: 'Nerón', initialStock: 9 },
+  { id: 'foc_clasica', name: 'Clásica', initialStock: 10 },
+  { id: 'foc_cesar', name: 'César', initialStock: 9 },
+  { id: 'foc_agusto', name: 'Agusto', initialStock: 9 },
+];
+
 export const stockKey = (item) => item.stockKey ?? item.id;
 export const stockUnits = (item) => item.stockUnits ?? 1;
 
-export const INITIAL_STOCK = MENU_ITEMS.reduce((acc, item) => {
-  if (item.initialStock !== undefined) acc[item.id] = item.initialStock;
-  return acc;
-}, {});
+export const INITIAL_STOCK = {
+  ...MENU_ITEMS.reduce((acc, item) => {
+    if (item.initialStock !== undefined) acc[item.id] = item.initialStock;
+    return acc;
+  }, {}),
+  ...FOCACCIA_FLAVORS.reduce((acc, f) => {
+    acc[f.id] = f.initialStock;
+    return acc;
+  }, {}),
+};
 
 export const getKitchenItemInfo = (item) => {
   const name = item.name || '';
@@ -52,7 +65,7 @@ export const getKitchenItemInfo = (item) => {
     return { displayName: 'Chipá', units: 1, isSpecial: true };
   }
 
-  // Focaccia: x2 se traduce a 2 focaccias, x1 a 1 focaccia
+  // Focaccia sin gustos específicos (compatibilidad): x2 se traduce a 2 focaccias, x1 a 1 focaccia
   if (id === 24 || (/foc/i.test(name) && /2/.test(name))) {
     return { displayName: 'Focaccia', units: 2, isSpecial: true };
   }
@@ -76,22 +89,46 @@ export const getKitchenItemInfo = (item) => {
 };
 
 export const groupOrderItems = (rawItems = []) => {
-  return Object.values(rawItems.reduce((acc, rawItem) => {
+  const result = {};
+
+  rawItems.forEach(rawItem => {
+    // Si el item tiene gustos de focaccia seleccionados (focacciaFlavors)
+    if (Array.isArray(rawItem.focacciaFlavors) && rawItem.focacciaFlavors.length > 0) {
+      rawItem.focacciaFlavors.forEach(flavor => {
+        const flavorName = typeof flavor === 'object' ? flavor.name : flavor;
+        const displayName = `Focaccia ${flavorName}`;
+        if (result[displayName]) {
+          result[displayName].quantity += 1;
+        } else {
+          result[displayName] = {
+            id: rawItem.id,
+            name: displayName,
+            quantity: 1,
+            isSpecial: true,
+          };
+        }
+      });
+      return;
+    }
+
+    // Flujo normal para el resto de los productos o compatibilidad con pedidos antiguos
     const { displayName, units, isSpecial } = getKitchenItemInfo(rawItem);
     const itemQty = typeof rawItem.quantity === 'number' && rawItem.quantity > 0 ? rawItem.quantity : 1;
     const unitsToAdd = itemQty * units;
 
-    if (acc[displayName]) {
-      acc[displayName].quantity += unitsToAdd;
+    if (result[displayName]) {
+      result[displayName].quantity += unitsToAdd;
     } else {
-      acc[displayName] = {
+      result[displayName] = {
         ...rawItem,
         name: displayName,
         quantity: unitsToAdd,
         isSpecial
       };
     }
-    return acc;
-  }, {}));
+  });
+
+  return Object.values(result);
 };
+
 

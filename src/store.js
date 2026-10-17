@@ -195,8 +195,16 @@ export function useStock() {
   const reduceStock = (items) => {
     const counts = {};
     items.forEach(item => {
-      const key = stockKey(item);
-      counts[key] = (counts[key] || 0) + stockUnits(item);
+      if (Array.isArray(item.focacciaFlavors) && item.focacciaFlavors.length > 0) {
+        item.focacciaFlavors.forEach(flavor => {
+          const flavorId = typeof flavor === 'object' ? flavor.id : flavor;
+          counts[flavorId] = (counts[flavorId] || 0) + 1;
+          counts[12] = (counts[12] || 0) + 1;
+        });
+      } else {
+        const key = stockKey(item);
+        counts[key] = (counts[key] || 0) + stockUnits(item);
+      }
     });
 
     const stockRef = ref(db, 'stock');

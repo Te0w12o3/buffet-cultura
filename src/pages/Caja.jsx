@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useOrders, useStock, useMenuItems } from '../store';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
-import { stockKey, stockUnits } from '../menu';
+import { stockKey, stockUnits, FOCACCIA_FLAVORS } from '../menu';
 
 export default function Caja() {
   const [customerName, setCustomerName] = useState('');
@@ -16,6 +16,11 @@ export default function Caja() {
   const [lastCompletedOrder, setLastCompletedOrder] = useState(null);
   const [paymentAmount, setPaymentAmount] = useState('');
   const fileInputRef = useRef(null);
+
+  // Estados para el modal de selección de gustos de Focaccia
+  const [showFocacciaModal, setShowFocacciaModal] = useState(false);
+  const [focacciaTargetItem, setFocacciaTargetItem] = useState(null);
+  const [focacciaSelections, setFocacciaSelections] = useState({});
 
   const { 
     addOrder, 
@@ -109,7 +114,40 @@ export default function Caja() {
     XLSX.writeFile(workbook, fileName);
   };
 
+  const getFlavorRemainingStock = (flavorId) => {
+    const flavor = FOCACCIA_FLAVORS.find(f => f.id === flavorId);
+    if (!flavor) return 0;
+    const base = stock[flavorId] ?? flavor.initialStock ?? 0;
+    const usedInCart = selectedItems.reduce((sum, item) => {
+      if (Array.isArray(item.focacciaFlavors)) {
+        return sum + item.focacciaFlavors.filter(f => (typeof f === 'object' ? f.id : f) === flavorId).length;
+      }
+      return sum;
+    }, 0);
+    return Math.max(0, base - usedInCart);
+  };
+
+  const getTotalAvailableFocaccias = () => {
+    return FOCACCIA_FLAVORS.reduce((sum, f) => sum + getFlavorRemainingStock(f.id), 0);
+  };
+
+  const handleUpdateFlavorStock = (flavorId, newQty) => {
+    const parsed = Math.max(0, parseInt(newQty, 10) || 0);
+    updateItemStock(flavorId, parsed);
+    const newTotal = FOCACCIA_FLAVORS.reduce((sum, f) => {
+      const val = f.id === flavorId ? parsed : (stock[f.id] ?? f.initialStock ?? 0);
+      return sum + val;
+    }, 0);
+    updateItemStock(12, newTotal);
+  };
+
   const getAvailableStock = (item) => {
+    if (item.id === 12) {
+      return getTotalAvailableFocaccias();
+    }
+    if (item.id === 24) {
+      return Math.floor(getTotalAvailableFocaccias() / 2);
+    }
     const key = stockKey(item);
     const used = selectedItems.filter(i => stockKey(i) === key).reduce((s, i) => s + stockUnits(i), 0);
     return Math.max(0, Math.floor(((stock[key] ?? 0) - used) / stockUnits(item)));
@@ -117,7 +155,79 @@ export default function Caja() {
 
   const handleAddItem = (item) => {
     if (getAvailableStock(item) <= 0) return;
+
+    if (item.id === 12 || item.id === 24) {
+      setFocacciaTargetItem(item);
+      setFocacciaSelections({});
+      setShowFocacciaModal(true);
+      return;
+    }
+
     setSelectedItems([...selectedItems, item]);
+  };
+
+  const handleSelectSingleFlavor = (flavor) => {
+    if (getFlavorRemainingStock(flavor.id) <= 0 || !focacciaTargetItem) return;
+    const focacciaItem = {
+      ...focacciaTargetItem,
+      name: `Focaccia (${flavor.name})`,
+      flavorName: flavor.name,
+      focacciaFlavors: [flavor],
+    };
+    setSelectedItems([...selectedItems, focacciaItem]);
+    setShowFocacciaModal(false);
+  };
+
+  const handleFocacciaCountChange = (flavorId, delta) => {
+    const flavor = FOCACCIA_FLAVORS.find(f => f.id === flavorId);
+    if (!flavor || !focacciaTargetItem) return;
+    const current = focacciaSelections[flavorId] || 0;
+    const remaining = getFlavorRemainingStock(flavorId);
+    const targetCount = focacciaTargetItem.id === 24 ? 2 : 1;
+    const currentTotal = Object.values(focacciaSelections).reduce((s, c) => s + (c || 0), 0);
+
+    const newQty = current + delta;
+    if (newQty < 0) return;
+    if (delta > 0) {
+      if (current >= remaining) return;
+      if (currentTotal >= targetCount) return;
+    }
+
+    setFocacciaSelections(prev => {
+      const updated = { ...prev, [flavorId]: newQty };
+      if (newQty === 0) delete updated[flavorId];
+      return updated;
+    });
+  };
+
+  const handleConfirmFocacciaPromo = () => {
+    if (!focacciaTargetItem) return;
+    const targetCount = focacciaTargetItem.id === 24 ? 2 : 1;
+    const currentTotal = Object.values(focacciaSelections).reduce((s, c) => s + (c || 0), 0);
+    if (currentTotal !== targetCount) return;
+
+    const chosenFlavors = [];
+    Object.entries(focacciaSelections).forEach(([fid, count]) => {
+      const flv = FOCACCIA_FLAVORS.find(f => f.id === fid);
+      for (let i = 0; i < count; i++) {
+        chosenFlavors.push(flv);
+      }
+    });
+
+    const summary = chosenFlavors.length === 1
+      ? chosenFlavors[0].name
+      : chosenFlavors[0].name === chosenFlavors[1]?.name
+        ? `2 ${chosenFlavors[0].name}`
+        : `${chosenFlavors[0].name} + ${chosenFlavors[1]?.name}`;
+
+    const focacciaItem = {
+      ...focacciaTargetItem,
+      name: focacciaTargetItem.id === 24 ? `Focaccia x2 (${summary})` : `Focaccia (${summary})`,
+      flavorSummary: summary,
+      focacciaFlavors: chosenFlavors,
+    };
+    setSelectedItems([...selectedItems, focacciaItem]);
+    setShowFocacciaModal(false);
   };
 
   const handleRemoveItem = (index) => {
@@ -268,7 +378,10 @@ export default function Caja() {
             }
 
             const inCart = selectedItems.filter(i => i.id === item.id).length;
-            const noStock = Math.floor((stock[stockKey(item)] ?? 0) / stockUnits(item)) === 0;
+            const isFocaccia = item.id === 12 || item.id === 24;
+            const noStock = isFocaccia
+              ? (item.id === 24 ? getTotalAvailableFocaccias() < 2 : getTotalAvailableFocaccias() === 0)
+              : Math.floor((stock[stockKey(item)] ?? 0) / stockUnits(item)) === 0;
             const available = getAvailableStock(item);
             const isOutOfStock = available <= 0;
             const isPromoItem = item.isPromo || item.category === 'Promociones';
@@ -295,6 +408,11 @@ export default function Caja() {
                     <span className={`font-bold text-base md:text-lg leading-tight ${isOutOfStock ? 'text-gray-400 line-through' : `text-white ${colors.hoverText}`}`}>
                       {item.name}
                     </span>
+                    {isFocaccia && !isOutOfStock && (
+                      <span className="text-[10px] text-amber-200 group-hover:text-amber-800 font-bold uppercase mt-0.5">
+                        Elegir gustos →
+                      </span>
+                    )}
                   </div>
                   {inCart > 0 && (
                     <span className={`text-xs font-black px-1.5 py-0.5 rounded-full shrink-0 shadow-sm transition-colors ${
@@ -659,8 +777,61 @@ export default function Caja() {
             </div>
             
             <div className="p-4 md:p-6 overflow-y-auto flex-1 custom-scrollbar space-y-4">
+              {/* Sección especial de Focaccias por Gusto */}
+              <div className="p-4 border-2 border-amber-300 bg-amber-50/70">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-3 border-b border-amber-200 pb-2">
+                  <div>
+                    <h4 className="font-black text-sm md:text-base text-amber-950 uppercase tracking-wider flex items-center gap-2">
+                      🥖 Focaccias por Gusto
+                    </h4>
+                    <p className="text-xs text-amber-800 font-bold">
+                      Control individual por sabor • Total: {FOCACCIA_FLAVORS.reduce((s, f) => s + (stock[f.id] ?? f.initialStock ?? 0), 0)} u. (≈ {Math.floor(FOCACCIA_FLAVORS.reduce((s, f) => s + (stock[f.id] ?? f.initialStock ?? 0), 0) / 2)} promos x2)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {FOCACCIA_FLAVORS.map(flavor => {
+                    const currentQty = stock[flavor.id] ?? flavor.initialStock ?? 0;
+                    return (
+                      <div key={flavor.id} className="p-3 border border-amber-200 bg-white flex items-center justify-between gap-3 shadow-sm">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-black text-sm text-[var(--color-primary)] truncate">{flavor.name}</p>
+                          <p className="text-[11px] text-gray-500 font-bold">
+                            {currentQty > 0 ? `${currentQty} disponibles` : <span className="text-red-500 font-bold uppercase">Agotado</span>}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateFlavorStock(flavor.id, Math.max(0, currentQty - 1))}
+                            className="w-8 h-8 rounded border-2 border-gray-300 hover:border-[var(--color-primary)] font-black text-base bg-white flex items-center justify-center text-[var(--color-primary)] hover:bg-gray-100 cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="0"
+                            value={currentQty}
+                            onChange={(e) => handleUpdateFlavorStock(flavor.id, e.target.value)}
+                            className="w-14 p-1 text-center font-black border-2 border-gray-300 focus:border-[var(--color-primary)] focus:outline-none bg-white text-base"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateFlavorStock(flavor.id, currentQty + 1)}
+                            className="w-8 h-8 rounded border-2 border-gray-300 hover:border-[var(--color-primary)] font-black text-base bg-white flex items-center justify-center text-[var(--color-primary)] hover:bg-gray-100 cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {menuItems.filter(item => stockKey(item) === item.id).map((item) => {
+                {menuItems.filter(item => stockKey(item) === item.id && item.id !== 12).map((item) => {
                   const currentQty = stock[item.id] ?? 0;
                   const linkedItems = menuItems.filter(o => o.id !== item.id && stockKey(o) === item.id);
                   return (
@@ -822,6 +993,195 @@ export default function Caja() {
           </div>
         </div>
       )}
+
+      {/* Modal de Selección de Gustos de Focaccia */}
+      {showFocacciaModal && focacciaTargetItem && (() => {
+        const isPromo = focacciaTargetItem.id === 24;
+        const targetCount = isPromo ? 2 : 1;
+        const currentSelectedTotal = Object.values(focacciaSelections).reduce((s, c) => s + (c || 0), 0);
+        const canConfirm = currentSelectedTotal === targetCount;
+
+        return (
+          <div 
+            className="fixed inset-0 bg-black/85 z-50 flex items-center justify-center p-4 md:p-6 backdrop-blur-sm"
+            onClick={() => setShowFocacciaModal(false)}
+          >
+            <div 
+              className="bg-white w-full max-w-lg flex flex-col rounded-none shadow-2xl border-4 border-[var(--color-secondary)] max-h-[90vh] animate-in fade-in zoom-in-95 duration-150"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="p-4 md:p-5 border-b-4 border-[var(--color-secondary)] flex justify-between items-center bg-[var(--color-primary)] text-white">
+                <div>
+                  <h3 className="text-xl md:text-2xl font-black uppercase tracking-widest flex items-center gap-2">
+                    🥖 {isPromo ? 'Elegir 2 Focaccias' : 'Elegir Gusto de Focaccia'}
+                  </h3>
+                  <p className="text-xs text-[var(--color-secondary)] font-bold tracking-wider mt-0.5">
+                    {isPromo 
+                      ? 'Seleccioná 2 unidades (pueden ser iguales o diferentes)' 
+                      : 'Hacé clic en el gusto para agregarlo al pedido'}
+                  </p>
+                </div>
+                <button 
+                  onClick={() => setShowFocacciaModal(false)} 
+                  className="text-white hover:text-[#ffdad6] text-4xl leading-none cursor-pointer"
+                >
+                  &times;
+                </button>
+              </div>
+
+              {/* Contenido / Sabores */}
+              <div className="p-4 md:p-6 overflow-y-auto flex-1 space-y-3 bg-gray-50">
+                {isPromo && (
+                  <div className="bg-amber-100/70 border-2 border-amber-300 p-2.5 text-center font-black text-amber-900 text-sm uppercase tracking-wider mb-2">
+                    Seleccionadas: {currentSelectedTotal} de 2
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  {FOCACCIA_FLAVORS.map(flavor => {
+                    const remaining = getFlavorRemainingStock(flavor.id);
+                    const isAvailable = remaining > 0;
+                    const selectedCount = focacciaSelections[flavor.id] || 0;
+
+                    if (isPromo) {
+                      return (
+                        <div 
+                          key={flavor.id}
+                          className={`p-3.5 border-2 flex items-center justify-between gap-3 transition-colors ${
+                            selectedCount > 0 
+                              ? 'border-[var(--color-primary)] bg-amber-50/60' 
+                              : isAvailable 
+                                ? 'border-gray-200 bg-white' 
+                                : 'border-gray-200 bg-gray-100 opacity-60'
+                          }`}
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-black text-base md:text-lg text-[var(--color-primary)] uppercase tracking-wide truncate">
+                              {flavor.name}
+                            </p>
+                            <p className="text-xs font-bold">
+                              {isAvailable ? (
+                                <span className="text-emerald-700">Quedan {remaining} disponibles</span>
+                              ) : (
+                                <span className="text-red-600 uppercase font-black">Agotado</span>
+                              )}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleFocacciaCountChange(flavor.id, -1)}
+                              disabled={selectedCount <= 0}
+                              className={`w-9 h-9 rounded font-black text-xl flex items-center justify-center border-2 transition-all ${
+                                selectedCount > 0
+                                  ? 'border-[var(--color-primary)] text-[var(--color-primary)] bg-white hover:bg-gray-100 cursor-pointer'
+                                  : 'border-gray-300 text-gray-300 bg-gray-50 cursor-not-allowed'
+                              }`}
+                            >
+                              -
+                            </button>
+                            <span className="w-8 text-center font-black text-lg text-[var(--color-primary)]">
+                              {selectedCount}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleFocacciaCountChange(flavor.id, 1)}
+                              disabled={!isAvailable || currentSelectedTotal >= 2 || selectedCount >= remaining}
+                              className={`w-9 h-9 rounded font-black text-xl flex items-center justify-center border-2 transition-all ${
+                                isAvailable && currentSelectedTotal < 2 && selectedCount < remaining
+                                  ? 'border-[var(--color-primary)] bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)] hover:border-[var(--color-secondary)] cursor-pointer'
+                                  : 'border-gray-300 text-gray-300 bg-gray-100 cursor-not-allowed'
+                              }`}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    // Caso x1: Selección directa de 1 sabor
+                    return (
+                      <button
+                        key={flavor.id}
+                        type="button"
+                        onClick={() => handleSelectSingleFlavor(flavor)}
+                        disabled={!isAvailable}
+                        className={`w-full p-4 border-2 flex items-center justify-between text-left transition-all ${
+                          isAvailable
+                            ? 'border-gray-200 bg-white hover:border-[var(--color-primary)] hover:bg-amber-50/50 shadow-sm hover:shadow cursor-pointer'
+                            : 'border-gray-200 bg-gray-100 opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-black text-lg text-[var(--color-primary)] uppercase tracking-wide">
+                            {flavor.name}
+                          </p>
+                          <p className="text-xs font-bold mt-0.5">
+                            {isAvailable ? (
+                              <span className="text-emerald-700">Quedan {remaining} disponibles</span>
+                            ) : (
+                              <span className="text-red-600 uppercase font-black">Agotado</span>
+                            )}
+                          </p>
+                        </div>
+                        {isAvailable ? (
+                          <span className="text-sm font-black text-[var(--color-primary)] uppercase tracking-wider bg-amber-100 px-3 py-1.5 border border-amber-300">
+                            Elegir →
+                          </span>
+                        ) : (
+                          <span className="text-xs font-black text-red-600 uppercase bg-red-100 px-2 py-1">
+                            Sin stock
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 bg-gray-100 border-t-2 border-gray-200 flex flex-col gap-2">
+                {isPromo ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleConfirmFocacciaPromo}
+                      disabled={!canConfirm}
+                      className={`w-full py-3.5 font-black uppercase tracking-widest text-base transition-colors ${
+                        canConfirm
+                          ? 'bg-[var(--color-primary)] text-white hover:bg-[var(--color-secondary)] cursor-pointer shadow-md'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {canConfirm 
+                        ? `✓ Agregar Focaccia x2 ($${focacciaTargetItem.price})` 
+                        : `Elegí ${2 - currentSelectedTotal} más`}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowFocacciaModal(false)}
+                      className="w-full text-center text-xs font-bold text-gray-500 hover:text-gray-700 uppercase tracking-wider py-1.5 cursor-pointer"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowFocacciaModal(false)}
+                    className="w-full py-2.5 bg-gray-200 text-gray-700 font-bold uppercase tracking-wider text-xs hover:bg-gray-300 transition-colors cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal de Confirmación de Pedido Enviado */}
       {showSuccessModal && lastCompletedOrder && (
